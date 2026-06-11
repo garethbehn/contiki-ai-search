@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contiki · Find Your Adventure</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700;1,900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --orange: #FF5500; --orange-light: #FF6B1A;
+      --dark-green: #1B3A2D; --cream: #FAF8F4; --cream-dark: #F2EFE9;
+      --black: #111111; --white: #FFFFFF; --muted: #6B6B6B;
+      --border: #E5E0D8; --card-radius: 12px;
+    }
+    html { font-size: 16px; }
+    body { font-family: 'Inter', sans-serif; background: var(--cream); color: var(--black); min-height: 100vh; }
+
+    /* GATE */
+    #gate { position:fixed; inset:0; z-index:9999; background:var(--black); display:flex; align-items:center; justify-content:center; }
+    .gate-box { text-align:center; padding:48px 40px; background:#1a1a1a; border-radius:16px; width:360px; }
+    .gate-logo { font-size:2rem; font-weight:800; color:var(--orange); font-style:italic; letter-spacing:-0.02em; margin-bottom:8px; }
+    .gate-sub { color:rgba(255,255,255,0.4); font-size:0.8rem; margin-bottom:32px; }
+    .gate-label { color:rgba(255,255,255,0.6); font-size:0.78rem; font-weight:600; text-align:left; margin-bottom:8px; display:block; }
+    #gate-input { width:100%; padding:12px 16px; border-radius:8px; border:1px solid #333; background:#111; color:white; font-family:'Inter',sans-serif; font-size:0.95rem; outline:none; margin-bottom:12px; }
+    #gate-input:focus { border-color:var(--orange); }
+    #gate-btn { width:100%; padding:12px; border-radius:8px; background:var(--orange); color:white; border:none; font-family:'Inter',sans-serif; font-weight:700; font-size:0.95rem; cursor:pointer; }
+    #gate-btn:hover { background:var(--orange-light); }
+    #gate-error { color:#ff6b6b; font-size:0.8rem; margin-top:8px; min-height:20px; }
+
+    /* NAV */
+    nav { background:var(--cream); border-bottom:1px solid var(--border); padding:0 32px; height:64px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:200; }
+    .nav-left { display:flex; align-items:center; gap:28px; }
+    .nav-link { font-size:0.85rem; font-weight:600; color:var(--black); text-decoration:none; display:flex; align-items:center; gap:4px; }
+    .nav-logo { position:absolute; left:50%; transform:translateX(-50%); font-size:1.6rem; font-weight:800; color:var(--orange); letter-spacing:-0.04em; text-decoration:none; font-style:italic; }
+    .nav-right { display:flex; align-items:center; gap:12px; }
+    .search-pill { display:flex; align-items:center; gap:8px; border:1.5px solid var(--orange); border-radius:100px; padding:8px 18px; cursor:pointer; background:transparent; font-family:'Inter',sans-serif; font-size:0.85rem; font-weight:600; color:var(--black); transition:background 0.15s; }
+    .search-pill:hover { background:rgba(255,85,0,0.06); }
+    .search-pill svg { color:var(--orange); }
+    .account-pill { border:1.5px solid var(--border); border-radius:100px; padding:8px 14px; cursor:pointer; background:transparent; display:flex; align-items:center; gap:6px; color:var(--black); }
+
+    /* SEARCH MODAL */
+    #search-overlay { display:none; position:fixed; inset:0; z-index:300; background:rgba(0,0,0,0.4); backdrop-filter:blur(2px); }
+    #search-overlay.open { display:block; }
+    #search-modal { position:absolute; top:0; left:0; right:0; background:var(--white); padding:40px 60px 48px; box-shadow:0 8px 48px rgba(0,0,0,0.15); transform:translateY(-100%); transition:transform 0.3s cubic-bezier(0.4,0,0.2,1); }
+    #search-overlay.open #search-modal { transform:translateY(0); }
+    .modal-heading { font-family:'Inter',sans-serif; font-size:1.6rem; font-weight:700; color:var(--dark-green); margin-bottom:24px; }
+    .modal-close { position:absolute; top:20px; right:24px; background:none; border:none; cursor:pointer; color:var(--muted); font-size:1.4rem; width:36px; height:36px; display:flex; align-items:center; justify-content:center; border-radius:50%; }
+    .modal-close:hover { background:var(--cream); }
+
+    .search-bar { display:flex; align-items:stretch; border:1.5px solid var(--border); border-radius:12px; overflow:hidden; margin-bottom:24px; box-shadow:0 2px 12px rgba(0,0,0,0.06); }
+    .search-bar:focus-within { border-color:var(--orange); }
+    .search-field-wrap { flex:2; display:flex; flex-direction:column; justify-content:center; padding:12px 20px; }
+    .field-label { font-size:0.7rem; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color:var(--dark-green); margin-bottom:2px; display:flex; align-items:center; gap:6px; }
+    .field-label svg { color:var(--orange); }
+    #ai-search-input { border:none; outline:none; font-family:'Inter',sans-serif; font-size:0.9rem; color:var(--black); background:transparent; width:100%; }
+    #ai-search-input::placeholder { color:#AAAAAA; }
+    .search-submit { background:var(--orange); color:white; border:none; padding:0 28px; cursor:pointer; font-family:'Inter',sans-serif; font-weight:700; font-size:0.9rem; display:flex; align-items:center; gap:8px; transition:background 0.15s; white-space:nowrap; }
+    .search-submit:hover { background:var(--orange-light); }
+    .search-submit:disabled { opacity:0.6; cursor:not-allowed; }
+
+    .suggestion-row { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:24px; align-items:center; }
+    .suggestion-row label { font-size:0.75rem; font-weight:600; color:var(--muted); }
+    .chip { border:1.5px solid var(--border); border-radius:100px; padding:6px 14px; font-size:0.78rem; font-weight:500; cursor:pointer; background:var(--white); color:var(--black); transition:border-color 0.15s,color 0.15s; font-family:'Inter',sans-serif; }
+    .chip:hover { border-color:var(--orange); color:var(--orange); }
+
+    #modal-status { display:none; align-items:center; gap:10px; font-size:0.85rem; color:var(--muted); margin-bottom:20px; }
+    #modal-status.visible { display:flex; }
+    .dots span { display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--orange); margin-right:3px; animation:dotpulse 1.2s ease-in-out infinite; }
+    .dots span:nth-child(2) { animation-delay:0.2s; }
+    .dots span:nth-child(3) { animation-delay:0.4s; }
+    @keyframes dotpulse { 0%,80%,100%{opacity:0.2;transform:scale(0.8)} 40%{opacity:1;transform:scale(1)} }
+
+    #modal-summary { display:none; padding:14px 18px; border-radius:10px; background:#FFF5EF; border:1px solid #FFD5BC; font-size:0.85rem; color:#7A3800; line-height:1.55; margin-bottom:24px; }
+    #modal-summary.visible { display:block; }
+    .summary-label { font-size:0.68rem; font-weight:700; letter-spacing:0.07em; text-transform:uppercase; color:var(--orange); margin-bottom:4px; }
+
+    #modal-results-header { display:none; align-items:center; margin-bottom:16px; }
+    #modal-results-header.visible { display:flex; }
+    .results-label { font-size:0.85rem; font-weight:600; color:var(--dark-green); }
+    .results-label span { color:var(--orange); }
+
+    #modal-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+    #modal-empty { display:none; text-align:center; padding:40px; color:var(--muted); font-size:0.9rem; }
+    #modal-empty.visible { display:block; }
+
+    /* TRIP CARD */
+    .trip-card { border-radius:16px; overflow:hidden; background:#1C1C1C; cursor:pointer; text-decoration:none; color:inherit; display:flex; flex-direction:column; opacity:0; transform:translateY(12px); animation:riseIn 0.3s ease forwards; transition:transform 0.2s,box-shadow 0.2s; }
+    .trip-card:hover { transform:translateY(-3px); box-shadow:0 12px 32px rgba(0,0,0,0.35); }
+    @keyframes riseIn { to{opacity:1;transform:translateY(0)} }
+    .trip-card:nth-child(1){animation-delay:0.04s} .trip-card:nth-child(2){animation-delay:0.09s}
+    .trip-card:nth-child(3){animation-delay:0.14s} .trip-card:nth-child(4){animation-delay:0.19s}
+    .trip-card:nth-child(5){animation-delay:0.24s} .trip-card:nth-child(6){animation-delay:0.29s}
+
+    .card-img { position:relative; height:210px; overflow:hidden; border-radius:12px; margin:6px 6px 0; flex-shrink:0; }
+    .card-img-bg { width:100%; height:100%; background-size:cover; background-position:center; position:absolute; inset:0; }
+    .card-img-bg::after { content:''; position:absolute; inset:0; background:linear-gradient(to top,rgba(0,0,0,0.78) 0%,rgba(0,0,0,0.08) 55%,transparent 100%); }
+
+    .originals-badge { position:absolute; top:10px; left:50%; transform:translateX(-50%); background:var(--orange); color:white; font-size:0.65rem; font-weight:700; letter-spacing:0.04em; font-style:italic; padding:4px 12px; border-radius:5px; text-transform:lowercase; white-space:nowrap; z-index:2; }
+
+    .card-title-overlay { position:absolute; bottom:0; left:0; right:0; padding:0 12px 12px; z-index:2; pointer-events:none; }
+    .card-title-line1 { font-family:'Playfair Display',serif; font-size:1.55rem; font-weight:900; color:white; line-height:1; display:block; text-transform:lowercase; }
+    .card-title-line2 { font-family:'Inter',sans-serif; font-size:0.6rem; font-weight:700; color:rgba(255,255,255,0.8); letter-spacing:0.2em; text-transform:uppercase; display:block; margin-top:2px; }
+
+    .card-meta { padding:10px 12px 14px; }
+    .card-tags-row { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:8px; align-items:center; }
+    .card-tag-sale { background:#FFD600; color:#111; font-size:0.62rem; font-weight:700; padding:3px 8px; border-radius:5px; white-space:nowrap; }
+    .card-tag-outline { border:1px solid rgba(255,255,255,0.25); color:rgba(255,255,255,0.7); font-size:0.62rem; font-weight:500; padding:3px 8px; border-radius:5px; display:inline-flex; align-items:center; gap:4px; white-space:nowrap; }
+    .card-tag-outline svg { color:var(--orange); }
+
+    .card-name { font-weight:700; font-size:0.92rem; color:white; margin-bottom:7px; }
+    .card-stats { display:flex; gap:14px; font-size:0.75rem; color:rgba(255,255,255,0.6); margin-bottom:9px; }
+    .card-stat { display:flex; align-items:center; gap:5px; }
+    .card-stat svg { color:var(--orange); flex-shrink:0; }
+    .card-stat-val { text-decoration:underline; text-underline-offset:2px; color:rgba(255,255,255,0.75); }
+
+    .card-price-row { display:flex; align-items:baseline; gap:3px; flex-wrap:wrap; }
+    .card-price-from { font-size:0.72rem; color:rgba(255,255,255,0.5); margin-right:1px; }
+    .card-price-symbol { font-size:0.8rem; font-weight:700; color:white; }
+    .card-price-amount { font-size:1.3rem; font-weight:800; color:white; line-height:1; }
+    .card-price-pp { font-size:0.72rem; color:rgba(255,255,255,0.5); margin-left:2px; }
+    .card-price-was { font-size:0.72rem; color:rgba(255,255,255,0.38); text-decoration:line-through; margin-left:8px; }
+
+    .card-reason { padding:9px 12px 11px; background:#1E0C00; border-top:1px solid #3a1800; font-size:0.73rem; color:#FFB380; line-height:1.45; display:flex; gap:7px; }
+
+    /* POPULAR */
+    #popular-section { margin-top:0; }
+    .popular-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+    .popular-title { font-size:1.15rem; font-weight:700; color:var(--dark-green); }
+    .popular-nav { display:flex; gap:8px; }
+    .pop-nav-btn { width:36px; height:36px; border-radius:50%; border:1.5px solid var(--border); background:white; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--black); }
+    .pop-nav-btn.active { background:var(--orange); border-color:var(--orange); color:white; }
+    .popular-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+    .popular-dots { display:flex; justify-content:center; gap:6px; margin-top:14px; }
+    .popular-dot { width:24px; height:4px; border-radius:2px; background:var(--orange); }
+    .popular-dot.inactive { background:var(--border); width:8px; }
+
+    /* HERO */
+    .hero { background:var(--black); position:relative; overflow:hidden; min-height:90vh; display:flex; flex-direction:column; justify-content:flex-end; padding-bottom:60px; }
+    .hero-bg { position:absolute; inset:0; background:url('https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=1600&q=80') center/cover no-repeat; opacity:0.45; }
+    .hero-content { position:relative; z-index:1; padding:0 60px; }
+    .hero-title { font-family:'Playfair Display',serif; font-size:clamp(4rem,12vw,10rem); font-weight:900; font-style:italic; color:var(--orange); line-height:0.9; letter-spacing:-0.02em; margin-bottom:24px; text-transform:uppercase; }
+    .hero-cta { display:inline-flex; align-items:center; gap:8px; background:white; color:var(--black); padding:14px 28px; border-radius:100px; font-weight:700; font-size:0.9rem; text-decoration:none; cursor:pointer; border:none; font-family:'Inter',sans-serif; }
+
+    /* HOME SECTIONS */
+    .home-section { padding:60px; }
+    .section-eyebrow { font-family:'Playfair Display',serif; font-size:clamp(1.3rem,3vw,2rem); font-style:italic; color:var(--orange); text-align:center; margin-bottom:6px; }
+    .section-sub { text-align:center; color:var(--muted); font-size:0.85rem; margin-bottom:40px; }
+    .section-title { font-size:1.2rem; font-weight:700; color:var(--dark-green); margin-bottom:4px; }
+    .section-desc { font-size:0.8rem; color:var(--muted); margin-bottom:20px; }
+    .trips-row { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+    .static-card { border-radius:16px; overflow:hidden; background:#1C1C1C; text-decoration:none; display:block; transition:transform 0.2s,box-shadow 0.2s; }
+    .static-card:hover { transform:translateY(-3px); box-shadow:0 12px 32px rgba(0,0,0,0.35); }
+    .region-links { text-align:center; font-size:1.4rem; font-weight:700; line-height:2; color:var(--dark-green); }
+    .region-links a { color:var(--dark-green); text-decoration:none; }
+    .region-links a:hover { color:var(--orange); }
+    .region-sep { color:var(--border); margin:0 8px; }
+
+    /* FOOTER */
+    footer { background:var(--black); color:rgba(255,255,255,0.5); padding:48px 60px 32px; }
+    .footer-grid { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:40px; margin-bottom:40px; }
+    .footer-logo { font-size:1.8rem; font-weight:800; color:var(--orange); font-style:italic; letter-spacing:-0.03em; margin-bottom:12px; }
+    .footer-col-title { font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:white; margin-bottom:12px; }
+    .footer-link { display:block; color:rgba(255,255,255,0.5); text-decoration:none; font-size:0.82rem; margin-bottom:8px; }
+    .footer-link:hover { color:white; }
+    .footer-bottom { border-top:1px solid rgba(255,255,255,0.1); padding-top:20px; font-size:0.75rem; display:flex; justify-content:space-between; align-items:center; }
+
+    /* ── TABLET (max 1024px) ── */
+    @media (max-width:1024px) {
+      .nav-left { gap:18px; }
+      .home-section { padding:48px 32px; }
+      footer { padding:40px 32px 24px; }
+      #modal-grid,.popular-grid,.trips-row { grid-template-columns:repeat(3,1fr); }
+      #search-modal { padding:36px 40px 44px; }
+    }
+
+    /* ── SMALL TABLET / LARGE MOBILE (max 768px) ── */
+    @media (max-width:768px) {
+      /* Nav: hide text links, keep logo + search */
+      .nav-left { display:none; }
+      nav { padding:0 20px; }
+      .nav-logo { font-size:1.4rem; }
+      .account-pill { display:none; }
+      .search-pill { padding:8px 14px; }
+
+      /* Gate */
+      .gate-box { width:calc(100% - 48px); padding:36px 24px; }
+
+      /* Hero */
+      .hero { min-height:70vh; padding-bottom:40px; }
+      .hero-content { padding:0 24px; }
+
+      /* Search modal: full screen slide-down */
+      #search-modal { padding:24px 20px 32px; overflow-y:auto; max-height:100vh; }
+      .modal-heading { font-size:1.3rem; margin-bottom:16px; }
+
+      /* Search bar: stack vertically */
+      .search-bar { flex-direction:column; border-radius:12px; }
+      .search-field-wrap { border-right:none; border-bottom:1px solid var(--border); padding:14px 16px; }
+      .search-submit { padding:14px 20px; justify-content:center; border-radius:0 0 10px 10px; }
+
+      /* Chips: scrollable row */
+      .suggestion-row { flex-wrap:nowrap; overflow-x:auto; padding-bottom:4px; -webkit-overflow-scrolling:touch; }
+      .suggestion-row::-webkit-scrollbar { display:none; }
+      .chip { flex-shrink:0; }
+
+      /* Grids: 2 cols */
+      #modal-grid,.popular-grid,.trips-row { grid-template-columns:repeat(2,1fr); gap:12px; }
+
+      /* Sections */
+      .home-section { padding:36px 20px; }
+      .section-eyebrow { font-size:1.4rem; }
+      .region-links { font-size:1.1rem; }
+
+      /* Footer */
+      footer { padding:36px 20px 24px; }
+      .footer-grid { grid-template-columns:1fr 1fr; gap:24px; }
+      .footer-bottom { flex-direction:column; gap:8px; text-align:center; }
+    }
+
+    /* ── MOBILE (max 480px) ── */
+    @media (max-width:480px) {
+      /* Nav */
+      nav { height:56px; }
+      .nav-logo { font-size:1.25rem; }
+      .search-pill span { display:none; } /* icon only */
+      .search-pill { padding:8px 12px; }
+
+      /* Gate */
+      .gate-box { padding:32px 20px; }
+
+      /* Hero */
+      .hero { min-height:60vh; padding-bottom:32px; }
+      .hero-cta { padding:12px 22px; font-size:0.85rem; }
+
+      /* Search modal */
+      #search-modal { padding:20px 16px 28px; }
+      .modal-heading { font-size:1.2rem; }
+      .modal-close { top:16px; right:16px; }
+
+      /* Cards: single column in modal, 2 col on homepage */
+      #modal-grid { grid-template-columns:1fr; }
+      .popular-grid { grid-template-columns:repeat(2,1fr); gap:10px; }
+      .trips-row { grid-template-columns:repeat(2,1fr); gap:10px; }
+
+      /* Card sizes */
+      .card-img { height:150px; }
+      .static-card-img { height:160px; }
+      .card-title-overlay { font-size:1rem; }
+
+      /* Sections */
+      .home-section { padding:28px 16px; }
+      .section-title { font-size:1.1rem; }
+      .region-links { font-size:1rem; line-height:1.9; }
+
+      /* Footer */
+      .footer-grid { grid-template-columns:1fr; gap:20px; }
+      footer { padding:28px 16px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- GATE -->
+<div id="gate">
+  <div class="gate-box">
+    <div class="gate-logo">contiki</div>
+    <div class="gate-sub">Preview access only</div>
+    <label class="gate-label" for="gate-input">Password</label>
+    <input type="password" id="gate-input" placeholder="Enter password" autocomplete="off" />
+    <button id="gate-btn" onclick="checkGate()">Enter</button>
+    <div id="gate-error"></div>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-left">
+    <a href="#" class="nav-link">Explore Trips <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></a>
+    <a href="#" class="nav-link">Build Trip <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></a>
+    <a href="#" class="nav-link">About <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></a>
+  </div>
+  <a href="#" class="nav-logo">contiki</a>
+  <div class="nav-right">
+    <button class="search-pill" onclick="openSearch()">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <span>Search</span>
+    </button>
+    <div class="account-pill">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </div>
+  </div>
+</nav>
+
+<!-- SEARCH MODAL -->
+<div id="search-overlay" onclick="handleOverlayClick(event)">
+  <div id="search-modal">
+    <button class="modal-close" onclick="closeSearch()">&#x2715;</button>
+    <div class="modal-heading">Search</div>
+    <div class="search-bar">
+      <div class="search-field-wrap">
+        <div class="field-label">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Where
+        </div>
+        <input id="ai-search-input" type="text" placeholder="Describe your dream trip in your own words..." autocomplete="off" />
+      </div>
+      <button class="search-submit" id="search-btn" onclick="doSearch()">
+        Search
+        <svg width="14" height="14" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      </button>
+    </div>
+    <div class="suggestion-row">
+      <label>Try:</label>
+      <span class="chip" onclick="useChip(this)">Solo trip, meet new people</span>
+      <span class="chip" onclick="useChip(this)">Beach &amp; islands, 10 days</span>
+      <span class="chip" onclick="useChip(this)">Epic adventure, South America</span>
+      <span class="chip" onclick="useChip(this)">Budget Europe under $2k</span>
+      <span class="chip" onclick="useChip(this)">Asia on a gap year</span>
+    </div>
+    <div id="modal-status">
+      <div class="dots"><span></span><span></span><span></span></div>
+      <span id="status-text">Finding your perfect trips...</span>
+    </div>
+    <div id="modal-summary">
+      <div class="summary-label">&#10022; AI understood</div>
+      <div id="summary-text"></div>
+    </div>
+    <div id="modal-results-header">
+      <div class="results-label"><span id="results-count">0</span> trips matched</div>
+    </div>
+    <div id="modal-grid"></div>
+    <div id="modal-empty">No trips matched that search - try a different description.</div>
+    <div id="popular-section">
+      <div class="popular-header">
+        <div class="popular-title">Popular trips</div>
+        <div class="popular-nav">
+          <button class="pop-nav-btn"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <button class="pop-nav-btn active"><svg width="14" height="14" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></button>
+        </div>
+      </div>
+      <div class="popular-grid" id="popular-grid"></div>
+      <div class="popular-dots">
+        <div class="popular-dot"></div>
+        <div class="popular-dot inactive"></div>
+        <div class="popular-dot inactive"></div>
+        <div class="popular-dot inactive"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-content">
+    <div class="hero-title">GO WANDER</div>
+    <button class="hero-cta" onclick="openSearch()">Make a trip finder &rarr;</button>
+  </div>
+</section>
+
+<!-- WHERE WILL YOU WANDER -->
+<section class="home-section" style="background:var(--cream-dark);text-align:center;">
+  <div class="section-eyebrow">Where will you wander next?</div>
+  <p class="section-sub">With expert guides, unbeatable itineraries and the freedom to explore your way,<br>we create unforgettable trips right across the world.</p>
+  <div class="region-links">
+    <a href="#">Europe</a><span class="region-sep">/</span>
+    <a href="#">Asia</a><span class="region-sep">/</span>
+    <a href="#">New Zealand</a><span class="region-sep">/</span>
+    <a href="#">Australia</a><span class="region-sep">/</span><br>
+    <a href="#">Latin America</a><span class="region-sep">/</span>
+    <a href="#">North America</a><span class="region-sep">/</span><br>
+    <a href="#">Africa &amp; The Middle East</a>
+  </div>
+</section>
+
+<!-- ICONIC TRIPS -->
+<section class="home-section" style="background:var(--cream);">
+  <div class="section-title">Our Most Iconic Trips</div>
+  <div class="section-desc">The trips that travellers can't get enough of.</div>
+  <div class="trips-row" id="iconic-grid"></div>
+</section>
+
+<!-- LATEST DROPS -->
+<section class="home-section" style="background:var(--cream-dark);">
+  <div class="section-title">Latest Drops</div>
+  <div class="section-desc">Brand new trips, just added.</div>
+  <div class="trips-row" id="latest-grid"></div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-grid">
+    <div>
+      <div class="footer-logo">contiki</div>
+      <div style="font-size:0.78rem;margin-bottom:16px;">For 18-35 year olds.<br>Travel with purpose.</div>
+    </div>
+    <div>
+      <div class="footer-col-title">About Contiki</div>
+      <a href="#" class="footer-link">Who We Are</a>
+      <a href="#" class="footer-link">Meet the Team</a>
+      <a href="#" class="footer-link">Reviews</a>
+      <a href="#" class="footer-link">Careers</a>
+    </div>
+    <div>
+      <div class="footer-col-title">Travelling with us</div>
+      <a href="#" class="footer-link">My Contiki</a>
+      <a href="#" class="footer-link">FAQs</a>
+      <a href="#" class="footer-link">Travel Updates</a>
+      <a href="#" class="footer-link">Payment Plans</a>
+    </div>
+    <div>
+      <div class="footer-col-title">Resources</div>
+      <a href="#" class="footer-link">six-two: Our Travel Magazine</a>
+      <a href="#" class="footer-link">Affiliates &amp; Reps</a>
+      <a href="#" class="footer-link">Press Room</a>
+      <a href="#" class="footer-link">Make Travel Matter</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>&#169; Copyright 2026 Contiki. All Rights Reserved.</span>
+    <span>Privacy &amp; Cookie Policy &middot; Terms and Conditions</span>
+  </div>
+</footer>
+
+<script>
+// GATE
+function checkGate() {
+  if (document.getElementById('gate-input').value === 'Go-Wander-2026') {
+    document.getElementById('gate').style.display = 'none';
+  } else {
+    document.getElementById('gate-error').textContent = 'Incorrect password. Try again.';
+    document.getElementById('gate-input').value = '';
+  }
+}
+document.getElementById('gate-input').addEventListener('keydown', e => { if (e.key === 'Enter') checkGate(); });
+
+// TRIP DATA
+const TRIPS = [
+  { id:'eu-highlights', title:'European Highlights', region:'Europe', route:'London to Paris to Rome', days:14, countries:7, price:2900, photo:'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=600&q=80', bgColor:'#1a1a2e', vibe:'Europe cities culture history nightlife social first time iconic classic multi country', tags:['Black Friday Sale','Hot NR','New Trip'] },
+  { id:'greek-islands', title:'Hopping the Greek Islands', region:'Europe', route:'Athens to Mykonos to Santorini', days:16, countries:1, price:2900, photo:'https://images.unsplash.com/photo-1533105079780-92b9be482077?w=600&q=80', bgColor:'#0077b6', vibe:'Greece islands beach summer swimming sailing Mediterranean relaxing party sun', tags:['Black Friday Sale','New Trip'] },
+  { id:'south-america', title:'South American Odyssey', region:'South America', route:'Lima to Cusco to Uyuni', days:18, countries:3, price:2750, photo:'https://images.unsplash.com/photo-1526392060635-9d6019884377?w=600&q=80', bgColor:'#2d6a4f', vibe:'South America adventure hiking mountains Machu Picchu ruins bucket list bold', tags:['Hot NR'] },
+  { id:'southeast-asia', title:'Southeast Asia Encounter', region:'Asia', route:'Bangkok to Chiang Mai to Hanoi', days:17, countries:4, price:2200, photo:'https://images.unsplash.com/photo-1508009603885-50cf7c579365?w=600&q=80', bgColor:'#3a0ca3', vibe:'Asia Southeast Asia budget gap year temples street food beaches culture backpacker', tags:['New Trip'] },
+  { id:'safari', title:'African Safari Experience', region:'Africa', route:'Nairobi to Masai Mara to Serengeti', days:12, countries:2, price:3900, photo:'https://images.unsplash.com/photo-1523805009345-7448845a9e53?w=600&q=80', bgColor:'#7d4e0a', vibe:'safari wildlife Africa animals adventure nature bucket list small group', tags:['Black Friday Sale'] },
+  { id:'japan', title:'Japan Uncovered', region:'Asia', route:'Tokyo to Kyoto to Osaka', days:11, countries:1, price:2900, photo:'https://images.unsplash.com/photo-1545569341-9eb8b30979d9?w=600&q=80', bgColor:'#590d22', vibe:'Japan culture food city urban Tokyo Kyoto temples ancient modern unique', tags:['New Trip','Hot NR'] },
+  { id:'budget-europe', title:'European Discovery', region:'Europe', route:'London to Amsterdam to Paris', days:7, countries:3, price:999, photo:'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=600&q=80', bgColor:'#023e8a', vibe:'budget cheap affordable Europe short trip first time cities quick under 1000', tags:['Black Friday Sale'] },
+  { id:'costa-rica', title:'Costa Rica Uncovered', region:'Latin America', route:'San Jose to Arenal to Manuel Antonio', days:10, countries:1, price:1900, photo:'https://images.unsplash.com/photo-1518182170546-07661fd94144?w=600&q=80', bgColor:'#1b4332', vibe:'nature adventure jungle wildlife active outdoors Latin America zip line hiking eco', tags:['Hot NR'] },
+  { id:'morocco', title:'Morocco Desert Adventure', region:'Africa', route:'Casablanca to Fes to Sahara to Marrakech', days:9, countries:1, price:1550, photo:'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=600&q=80', bgColor:'#7c3d10', vibe:'desert Africa Morocco unique culture souks camel Sahara adventure different', tags:['New Trip'] },
+  { id:'scandinavia', title:'Scandinavian Explorer', region:'Europe', route:'Copenhagen to Oslo to Bergen to Stockholm', days:10, countries:3, price:2500, photo:'https://images.unsplash.com/photo-1531366936337-7c912a4589a7?w=600&q=80', bgColor:'#023e8a', vibe:'Scandinavia fjords Norway Sweden Denmark scenic nature chill relaxed unique', tags:[] },
+  { id:'aus-nz', title:'Australia and New Zealand', region:'Aus and NZ', route:'Sydney to Queenstown to Auckland', days:22, countries:2, price:4300, photo:'https://images.unsplash.com/photo-1507699622108-4be3abd695ad?w=600&q=80', bgColor:'#264653', vibe:'Australia New Zealand bungee adventure long epic bucket list Queenstown Sydney', tags:['Black Friday Sale','Hot NR'] },
+  { id:'usa-parks', title:'USA National Parks', region:'North America', route:'Las Vegas to Grand Canyon to Zion', days:8, countries:1, price:1300, photo:'https://images.unsplash.com/photo-1474044159687-1ee9f3a51722?w=600&q=80', bgColor:'#7c2d12', vibe:'USA America road trip national parks nature hiking outdoors canyon desert landscapes', tags:['New Trip'] },
+];
+
+function buildCardImg(t) {
+  var bgStyle = 'background-image:url(' + t.photo + ');background-color:' + t.bgColor + ';background-size:cover;background-position:center;';
+  var words = t.title.split(' ');
+  var line1 = words[0];
+  var line2 = words.slice(1).join(' ');
+  return '<div class="card-img">' +
+    '<div class="card-img-bg" style="' + bgStyle + '"></div>' +
+    '<div class="originals-badge">originals</div>' +
+    '<div class="card-title-overlay">' +
+      '<span class="card-title-line1">' + line1.toLowerCase() + '</span>' +
+      (line2 ? '<span class="card-title-line2">' + line2.toUpperCase() + '</span>' : '') +
+    '</div>' +
+  '</div>';
+}
+
+function buildTags(tags) {
+  var html = '<div class="card-tags-row">';
+  if (tags.indexOf('Black Friday Sale') >= 0) html += '<span class="card-tag-sale">Black Friday Sale</span>';
+  if (tags.indexOf('Hot NR') >= 0) html += '<span class="card-tag-outline"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>Hot NR</span>';
+  if (tags.indexOf('New Trip') >= 0) html += '<span class="card-tag-outline">New Trip</span>';
+  html += '</div>';
+  return html;
+}
+
+function buildMeta(t) {
+  var wasPrice = Math.round(t.price * 1.105 / 25) * 25;
+  return '<div class="card-meta">' +
+    buildTags(t.tags) +
+    '<div class="card-name">' + t.title + '</div>' +
+    '<div class="card-stats">' +
+      '<span class="card-stat">' +
+        '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>' +
+        '<span class="card-stat-val">' + t.days + ' days</span>' +
+      '</span>' +
+      '<span class="card-stat">' +
+        '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>' +
+        '<span class="card-stat-val">' + t.countries + ' ' + (t.countries===1?'Country':'Countries') + '</span>' +
+      '</span>' +
+    '</div>' +
+    '<div class="card-price-row">' +
+      '<span class="card-price-from">From</span>' +
+      '<span class="card-price-symbol">$</span>' +
+      '<span class="card-price-amount">' + t.price.toLocaleString() + '</span>' +
+      '<span class="card-price-pp">pp</span>' +
+      '<span class="card-price-was">Was $' + wasPrice.toLocaleString() + ' pp</span>' +
+    '</div>' +
+  '</div>';
+}
+
+function staticCardHTML(t) {
+  return '<a href="#" class="static-card" onclick="return false">' + buildCardImg(t) + buildMeta(t) + '</a>';
+}
+
+function cardHTML(t, showReason) {
+  var reasonHTML = showReason && t.aiReason ? '<div class="card-reason"><span>&#10022;</span><span>' + t.aiReason + '</span></div>' : '';
+  return '<a href="#" class="trip-card" onclick="return false">' + buildCardImg(t) + buildMeta(t) + reasonHTML + '</a>';
+}
+
+function renderPopular() {
+  document.getElementById('popular-grid').innerHTML = TRIPS.slice(0,4).map(function(t){return cardHTML(t,false);}).join('');
+}
+
+function renderHomepageCards() {
+  document.getElementById('iconic-grid').innerHTML = [TRIPS[0],TRIPS[1],TRIPS[2],TRIPS[3]].map(staticCardHTML).join('');
+  document.getElementById('latest-grid').innerHTML = [TRIPS[5],TRIPS[4],TRIPS[8],TRIPS[11]].map(staticCardHTML).join('');
+}
+
+// MODAL
+function openSearch() {
+  document.getElementById('search-overlay').classList.add('open');
+  setTimeout(function(){ document.getElementById('ai-search-input').focus(); }, 300);
+}
+function closeSearch() { document.getElementById('search-overlay').classList.remove('open'); }
+function handleOverlayClick(e) { if (e.target === document.getElementById('search-overlay')) closeSearch(); }
+document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeSearch(); });
+document.getElementById('ai-search-input').addEventListener('keydown', function(e){ if (e.key === 'Enter') doSearch(); });
+function useChip(el) {
+  document.getElementById('ai-search-input').value = el.textContent.replace('&amp;','&');
+  doSearch();
+}
+
+// SEARCH
+async function doSearch() {
+  var query = document.getElementById('ai-search-input').value.trim();
+  if (!query) return;
+
+  document.getElementById('popular-section').style.display = 'none';
+  document.getElementById('modal-grid').innerHTML = '';
+  document.getElementById('modal-summary').className = '';
+  document.getElementById('modal-results-header').className = '';
+  document.getElementById('modal-empty').className = '';
+  document.getElementById('modal-status').className = 'visible';
+  document.getElementById('search-btn').disabled = true;
+
+  try {
+    var result = await semanticSearch(query);
+    document.getElementById('modal-status').className = '';
+
+    if (!result.matches.length) {
+      document.getElementById('modal-empty').className = 'visible';
+      return;
+    }
+
+    document.getElementById('summary-text').textContent = result.summary;
+    document.getElementById('modal-summary').className = 'visible';
+    document.getElementById('results-count').textContent = result.matches.length;
+    document.getElementById('modal-results-header').className = 'visible';
+    document.getElementById('modal-grid').innerHTML = result.matches.map(function(t){return cardHTML(t,true);}).join('');
+
+  } catch(err) {
+    document.getElementById('modal-status').className = '';
+    document.getElementById('summary-text').textContent = 'Something went wrong: ' + err.message;
+    document.getElementById('modal-summary').className = 'visible';
+  } finally {
+    document.getElementById('search-btn').disabled = false;
+  }
+}
+
+async function semanticSearch(query) {
+  var res = await fetch('/api/search', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query: query, trips: TRIPS })
+  });
+
+  if (!res.ok) {
+    var err = await res.json().catch(function(){return {};});
+    throw new Error(err && err.error ? err.error : 'Search error ' + res.status);
+  }
+
+  var parsed = await res.json();
+
+  var matches = parsed.matches.map(function(m){
+    var t = TRIPS.find(function(x){return x.id===m.id;});
+    return t ? Object.assign({}, t, { aiReason: m.reason, score: m.score }) : null;
+  }).filter(Boolean);
+
+  return { summary: parsed.summary, matches: matches };
+}
+
+renderPopular();
+renderHomepageCards();
+</script>
+</body>
+</html>
