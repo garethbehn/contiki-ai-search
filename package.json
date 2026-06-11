@@ -1,0 +1,8 @@
+{
+  "name": "contiki-ai-search",
+  "version": "1.0.0",
+  "description": "Contiki AI semantic search proof of concept",
+  "engines": {
+    "node": "18.x"
+  }
+}
