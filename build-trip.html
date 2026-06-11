@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Build Your Trip · Contiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700;1,900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --orange:#FF5500;--orange-light:#FF6B1A;--dark-green:#1B3A2D;
+      --cream:#FAF8F4;--cream-dark:#F2EFE9;--black:#111;--white:#fff;
+      --muted:#6B6B6B;--border:#E5E0D8;--card-radius:12px;
+      --blue:#2563EB;--blue-soft:#EFF6FF;
+    }
+    html{font-size:16px}
+    body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--black);min-height:100vh}
+
+    /* NAV */
+    nav{background:var(--cream);border-bottom:1px solid var(--border);padding:0 32px;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200}
+    .nav-left{display:flex;align-items:center;gap:28px}
+    .nav-link{font-size:0.85rem;font-weight:600;color:var(--black);text-decoration:none;display:flex;align-items:center;gap:4px}
+    .nav-link.active{color:var(--orange);border-bottom:2px solid var(--orange);padding-bottom:2px}
+    .nav-logo{position:absolute;left:50%;transform:translateX(-50%);font-size:1.6rem;font-weight:800;color:var(--orange);letter-spacing:-0.04em;text-decoration:none;font-style:italic}
+    .nav-right{display:flex;align-items:center;gap:12px}
+    .search-pill{display:flex;align-items:center;gap:8px;border:1.5px solid var(--orange);border-radius:100px;padding:8px 18px;cursor:pointer;background:transparent;font-family:'Inter',sans-serif;font-size:0.85rem;font-weight:600;color:var(--black);text-decoration:none}
+    .search-pill:hover{background:rgba(255,85,0,0.06)}
+
+    /* PAGE LAYOUT */
+    .page-header{background:var(--dark-green);padding:48px 60px 40px;color:white}
+    .page-eyebrow{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-bottom:8px}
+    .page-title{font-family:'Playfair Display',serif;font-size:clamp(2rem,4vw,3rem);font-weight:900;font-style:italic;color:var(--orange);line-height:1.1;margin-bottom:8px}
+    .page-sub{color:rgba(255,255,255,0.6);font-size:0.95rem;max-width:520px}
+
+    /* MODE TOGGLE */
+    .mode-bar{background:var(--white);border-bottom:1px solid var(--border);padding:0 60px;display:flex;gap:0}
+    .mode-tab{padding:18px 28px;font-size:0.9rem;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;transition:all 0.15s;background:none;border-top:none;border-left:none;border-right:none;font-family:'Inter',sans-serif}
+    .mode-tab.active{color:var(--dark-green);border-bottom-color:var(--orange)}
+
+    /* MAIN CANVAS */
+    .builder-wrap{display:flex;gap:0;min-height:calc(100vh - 240px)}
+
+    /* TIMELINE PANEL */
+    .timeline-panel{flex:1;padding:40px 60px;overflow-y:auto}
+    .timeline-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:32px}
+    .timeline-title{font-size:1.1rem;font-weight:700;color:var(--dark-green)}
+    .add-segment-btn{display:flex;align-items:center;gap:8px;background:var(--orange);color:white;border:none;border-radius:100px;padding:10px 20px;font-family:'Inter',sans-serif;font-size:0.85rem;font-weight:600;cursor:pointer;transition:background 0.15s}
+    .add-segment-btn:hover{background:var(--orange-light)}
+
+    /* TIMELINE */
+    .timeline{position:relative}
+    .timeline::before{content:'';position:absolute;left:22px;top:0;bottom:0;width:2px;background:var(--border);z-index:0}
+
+    .segment{position:relative;padding-left:60px;margin-bottom:8px}
+    .segment-dot{position:absolute;left:14px;top:20px;width:18px;height:18px;border-radius:50%;background:var(--orange);border:3px solid var(--cream);z-index:1;flex-shrink:0}
+    .segment-dot.gap{background:var(--blue)}
+    .segment-dot.custom{background:var(--dark-green)}
+
+    .segment-card{background:var(--white);border:1px solid var(--border);border-radius:var(--card-radius);overflow:hidden;transition:box-shadow 0.15s}
+    .segment-card:hover{box-shadow:0 4px 16px rgba(0,0,0,0.08)}
+    .segment-card.gap-card{border-color:#BFDBFE;background:var(--blue-soft)}
+
+    .segment-header{display:flex;align-items:center;gap:12px;padding:16px 18px;cursor:pointer}
+    .segment-img{width:56px;height:56px;border-radius:8px;object-fit:cover;background:#1C1C1C;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1.4rem;overflow:hidden}
+    .segment-img img{width:100%;height:100%;object-fit:cover}
+    .segment-info{flex:1;min-width:0}
+    .segment-label{font-size:0.68rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+    .segment-name{font-weight:700;font-size:0.95rem;color:var(--black);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .segment-dates{font-size:0.78rem;color:var(--muted);margin-top:2px}
+    .segment-actions{display:flex;gap:6px;flex-shrink:0}
+    .seg-btn{width:30px;height:30px;border-radius:6px;border:1px solid var(--border);background:var(--white);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:all 0.15s}
+    .seg-btn:hover{border-color:var(--orange);color:var(--orange)}
+    .seg-btn.danger:hover{border-color:#ef4444;color:#ef4444}
+
+    .gap-card .segment-header{background:var(--blue-soft)}
+    .gap-label{font-size:0.72rem;font-weight:600;color:var(--blue);display:flex;align-items:center;gap:6px}
+    .gap-actions{display:flex;gap:8px;padding:12px 18px;border-top:1px solid #BFDBFE}
+    .gap-action-btn{flex:1;padding:9px;border-radius:8px;border:1.5px solid #BFDBFE;background:white;color:var(--blue);font-family:'Inter',sans-serif;font-size:0.8rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.15s}
+    .gap-action-btn:hover{background:#BFDBFE}
+    .gap-action-btn.active{background:var(--blue);color:white;border-color:var(--blue)}
+
+    /* SUGGESTIONS PANEL */
+    .suggestions-panel{width:380px;background:var(--white);border-left:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:64px;height:calc(100vh - 64px);overflow:hidden}
+    .panel-header{padding:20px 24px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+    .panel-title{font-size:1rem;font-weight:700;color:var(--dark-green)}
+    .panel-sub{font-size:0.78rem;color:var(--muted);margin-top:2px}
+    .panel-body{flex:1;overflow-y:auto;padding:16px 24px}
+
+    /* SEARCH IN PANEL */
+    .panel-search{display:flex;gap:8px;margin-bottom:16px}
+    .panel-search input{flex:1;border:1.5px solid var(--border);border-radius:8px;padding:10px 14px;font-family:'Inter',sans-serif;font-size:0.85rem;color:var(--black);outline:none}
+    .panel-search input:focus{border-color:var(--orange)}
+    .panel-search button{background:var(--orange);color:white;border:none;border-radius:8px;padding:10px 16px;font-family:'Inter',sans-serif;font-size:0.82rem;font-weight:600;cursor:pointer;white-space:nowrap}
+
+    /* TOUR CARDS IN PANEL */
+    .panel-tour{display:flex;gap:12px;padding:12px;border-radius:10px;border:1px solid var(--border);margin-bottom:10px;cursor:pointer;transition:all 0.15s;background:var(--cream)}
+    .panel-tour:hover{border-color:var(--orange);background:#FFF5EF}
+    .panel-tour-img{width:52px;height:52px;border-radius:8px;background:#1C1C1C;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1.3rem;overflow:hidden}
+    .panel-tour-img img{width:100%;height:100%;object-fit:cover}
+    .panel-tour-info{flex:1;min-width:0}
+    .panel-tour-name{font-weight:700;font-size:0.85rem;color:var(--black);margin-bottom:2px}
+    .panel-tour-meta{font-size:0.72rem;color:var(--muted);margin-bottom:4px}
+    .panel-tour-price{font-size:0.82rem;font-weight:700;color:var(--dark-green)}
+    .add-to-trip-btn{align-self:center;background:var(--orange);color:white;border:none;border-radius:6px;padding:6px 12px;font-family:'Inter',sans-serif;font-size:0.75rem;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0}
+
+    /* CUSTOM SEGMENT BUILDER */
+    .custom-builder{background:var(--cream-dark);border-radius:10px;padding:16px;margin-bottom:16px}
+    .custom-builder-title{font-size:0.82rem;font-weight:700;color:var(--dark-green);margin-bottom:12px}
+    .form-row{display:flex;gap:8px;margin-bottom:8px}
+    .form-field{flex:1;display:flex;flex-direction:column;gap:4px}
+    .form-label{font-size:0.68rem;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted)}
+    .form-input{border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-family:'Inter',sans-serif;font-size:0.85rem;color:var(--black);background:white;outline:none;width:100%}
+    .form-input:focus{border-color:var(--orange)}
+    .activity-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+    .act-tag{background:white;border:1.5px solid var(--border);border-radius:100px;padding:4px 12px;font-size:0.72rem;font-weight:500;cursor:pointer;color:var(--black);transition:all 0.15s}
+    .act-tag.selected{background:var(--dark-green);color:white;border-color:var(--dark-green)}
+    .add-custom-btn{width:100%;padding:10px;border-radius:8px;background:var(--dark-green);color:white;border:none;font-family:'Inter',sans-serif;font-size:0.85rem;font-weight:700;cursor:pointer}
+
+    /* FLIGHTS & HOTELS PANEL */
+    .fh-panel{padding:0 24px 16px}
+    .fh-section-title{font-size:0.78rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+    .flight-card{background:var(--cream);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px}
+    .flight-airline{font-size:0.78rem;font-weight:600;color:var(--black);margin-bottom:4px}
+    .flight-route{font-size:0.72rem;color:var(--muted);margin-bottom:6px}
+    .flight-footer{display:flex;justify-content:space-between;align-items:center}
+    .flight-price{font-weight:800;font-size:1rem;color:var(--dark-green)}
+    .flight-stops{font-size:0.68rem;color:var(--muted)}
+    .book-btn{background:var(--orange);color:white;border:none;border-radius:6px;padding:6px 12px;font-family:'Inter',sans-serif;font-size:0.72rem;font-weight:700;cursor:pointer}
+
+    .hotel-card{background:var(--cream);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px;display:flex;gap:10px}
+    .hotel-img{width:48px;height:48px;border-radius:6px;background:#ddd;flex-shrink:0;overflow:hidden}
+    .hotel-img img{width:100%;height:100%;object-fit:cover}
+    .hotel-info{flex:1}
+    .hotel-name{font-size:0.82rem;font-weight:700;color:var(--black);margin-bottom:2px}
+    .hotel-addr{font-size:0.7rem;color:var(--muted);margin-bottom:4px}
+    .hotel-rating{font-size:0.72rem;color:var(--orange);font-weight:600}
+
+    /* LOADING */
+    .loading-row{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:0.82rem;padding:12px 0}
+    .spin{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--orange);border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* SUMMARY FOOTER */
+    .trip-summary{background:var(--dark-green);color:white;padding:20px 60px;display:flex;align-items:center;justify-content:space-between;position:sticky;bottom:0;z-index:100}
+    .summary-info{display:flex;gap:32px}
+    .summary-stat{display:flex;flex-direction:column}
+    .summary-stat-label{font-size:0.68rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-bottom:2px}
+    .summary-stat-val{font-size:1.1rem;font-weight:700}
+    .save-trip-btn{background:var(--orange);color:white;border:none;border-radius:100px;padding:12px 28px;font-family:'Inter',sans-serif;font-size:0.9rem;font-weight:700;cursor:pointer}
+
+    /* EMPTY STATE */
+    .empty-timeline{text-align:center;padding:60px 20px;color:var(--muted)}
+    .empty-icon{font-size:3rem;margin-bottom:12px}
+    .empty-title{font-size:1.1rem;font-weight:700;color:var(--dark-green);margin-bottom:6px}
+    .empty-sub{font-size:0.85rem;line-height:1.5}
+
+    /* AI BADGE */
+    .ai-badge{display:inline-flex;align-items:center;gap:5px;background:#FFF5EF;border:1px solid #FFD5BC;border-radius:100px;padding:3px 10px;font-size:0.68rem;font-weight:700;color:var(--orange);letter-spacing:0.04em}
+    .ai-dot{width:5px;height:5px;border-radius:50%;background:var(--orange);animation:pulse 2s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+    /* RESPONSIVE */
+    @media(max-width:900px){
+      .page-header,.mode-bar,.timeline-panel{padding-left:24px;padding-right:24px}
+      .suggestions-panel{display:none}
+      .trip-summary{padding:16px 24px}
+      .summary-info{gap:16px}
+    }
+    @media(max-width:600px){
+      nav{padding:0 16px}
+      .nav-left{display:none}
+      .page-header{padding:32px 16px 24px}
+      .timeline-panel{padding:24px 16px}
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-left">
+    <a href="/" class="nav-link">Explore Trips
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </a>
+    <a href="/build-trip.html" class="nav-link active">Build Trip
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </a>
+    <a href="/" class="nav-link">About
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </a>
+  </div>
+  <a href="/" class="nav-logo">contiki</a>
+  <div class="nav-right">
+    <a href="/" class="search-pill">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <span>Search</span>
+    </a>
+  </div>
+</nav>
+
+<!-- PAGE HEADER -->
+<div class="page-header">
+  <div class="page-eyebrow">Trip Builder</div>
+  <div class="page-title">Build Your Adventure</div>
+  <p class="page-sub">String together Contiki tours, or build your own route from scratch. We'll fill the gaps with flights and hotels.</p>
+</div>
+
+<!-- MODE TABS -->
+<div class="mode-bar">
+  <button class="mode-tab active" onclick="setMode('tours')" id="tab-tours">&#128205; Choose Contiki Tours</button>
+  <button class="mode-tab" onclick="setMode('custom')" id="tab-custom">&#9997;&#65039; Build Your Own</button>
+</div>
+
+<!-- BUILDER -->
+<div class="builder-wrap">
+
+  <!-- TIMELINE -->
+  <div class="timeline-panel">
+    <div class="timeline-header">
+      <div>
+        <div class="timeline-title">Your trip timeline</div>
+      </div>
+      <button class="add-segment-btn" onclick="showAddPanel()">
+        <svg width="14" height="14" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        Add segment
+      </button>
+    </div>
+
+    <div class="timeline" id="timeline">
+      <div class="empty-timeline" id="empty-state">
+        <div class="empty-icon">&#127759;</div>
+        <div class="empty-title">Your trip starts here</div>
+        <p class="empty-sub">Pick a Contiki tour from the panel, or add your own destination to get started.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUGGESTIONS PANEL -->
+  <div class="suggestions-panel" id="suggestions-panel">
+    <div class="panel-header">
+      <div class="panel-title" id="panel-title">Browse tours</div>
+      <div class="panel-sub" id="panel-sub">Pick a Contiki tour to add to your trip</div>
+    </div>
+    <div class="panel-body" id="panel-body">
+      <!-- populated by JS -->
+    </div>
+  </div>
+
+</div>
+
+<!-- TRIP SUMMARY BAR -->
+<div class="trip-summary" id="trip-summary" style="display:none">
+  <div class="summary-info">
+    <div class="summary-stat">
+      <span class="summary-stat-label">Segments</span>
+      <span class="summary-stat-val" id="sum-segments">0</span>
+    </div>
+    <div class="summary-stat">
+      <span class="summary-stat-label">Total days</span>
+      <span class="summary-stat-val" id="sum-days">0</span>
+    </div>
+    <div class="summary-stat">
+      <span class="summary-stat-label">Est. cost</span>
+      <span class="summary-stat-val" id="sum-cost">$0</span>
+    </div>
+  </div>
+  <button class="save-trip-btn">Save &amp; enquire &#8594;</button>
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────────────────────
+var mode = 'tours';
+var segments = []; // { id, type:'tour'|'custom'|'gap', ...data }
+var activeGapId = null;
+
+// ── MOCK TRIP DATA (same as index.html, ready for live TTC) ───────────────────
+var TOURS = [
+  { id:'eu-highlights', title:'European Highlights', region:'Europe', route:'London → Paris → Rome', days:14, countries:7, price:2900, photo:'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=400&q=80', bgColor:'#1a1a2e', emoji:'🏰', tags:['Black Friday Sale','Hot NR'] },
+  { id:'greek-islands', title:'Hopping the Greek Islands', region:'Europe', route:'Athens → Mykonos → Santorini', days:16, countries:1, price:2900, photo:'https://images.unsplash.com/photo-1533105079780-92b9be482077?w=400&q=80', bgColor:'#0077b6', emoji:'🏝️', tags:['New Trip'] },
+  { id:'south-america', title:'South American Odyssey', region:'South America', route:'Lima → Cusco → Uyuni', days:18, countries:3, price:2750, photo:'https://images.unsplash.com/photo-1526392060635-9d6019884377?w=400&q=80', bgColor:'#2d6a4f', emoji:'🦙', tags:[] },
+  { id:'southeast-asia', title:'Southeast Asia Encounter', region:'Asia', route:'Bangkok → Chiang Mai → Hanoi', days:17, countries:4, price:2200, photo:'https://images.unsplash.com/photo-1508009603885-50cf7c579365?w=400&q=80', bgColor:'#3a0ca3', emoji:'⛩️', tags:['New Trip'] },
+  { id:'safari', title:'African Safari Experience', region:'Africa', route:'Nairobi → Masai Mara → Serengeti', days:12, countries:2, price:3900, photo:'https://images.unsplash.com/photo-1523805009345-7448845a9e53?w=400&q=80', bgColor:'#7d4e0a', emoji:'🦁', tags:[] },
+  { id:'japan', title:'Japan Uncovered', region:'Asia', route:'Tokyo → Kyoto → Osaka', days:11, countries:1, price:2900, photo:'https://images.unsplash.com/photo-1545569341-9eb8b30979d9?w=400&q=80', bgColor:'#590d22', emoji:'🗼', tags:['Hot NR'] },
+  { id:'morocco', title:'Morocco Desert Adventure', region:'Africa', route:'Casablanca → Fes → Sahara → Marrakech', days:9, countries:1, price:1550, photo:'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=400&q=80', bgColor:'#7c3d10', emoji:'🐪', tags:[] },
+  { id:'japan', title:'Japan Uncovered', region:'Asia', route:'Tokyo → Kyoto → Osaka', days:11, countries:1, price:2900, photo:'https://images.unsplash.com/photo-1545569341-9eb8b30979d9?w=400&q=80', bgColor:'#590d22', emoji:'🗼', tags:['Hot NR'] },
+  { id:'aus-nz', title:'Australia and New Zealand', region:'Aus & NZ', route:'Sydney → Queenstown → Auckland', days:22, countries:2, price:4300, photo:'https://images.unsplash.com/photo-1507699622108-4be3abd695ad?w=400&q=80', bgColor:'#264653', emoji:'🥝', tags:[] },
+  { id:'usa-parks', title:'USA National Parks', region:'North America', route:'Las Vegas → Grand Canyon → Zion', days:8, countries:1, price:1300, photo:'https://images.unsplash.com/photo-1474044159687-1ee9f3a51722?w=400&q=80', bgColor:'#7c2d12', emoji:'🏜️', tags:['New Trip'] },
+];
+
+// Deduplicate
+TOURS = TOURS.filter((t,i,a) => a.findIndex(x=>x.id===t.id)===i);
+
+var ACTIVITIES = ['Hiking','Beaches','Food & Wine','Nightlife','Culture','History','Adventure Sports','Wildlife','City Breaks','Festivals','Sailing','Skiing'];
+
+// ── MODE ──────────────────────────────────────────────────────────────────────
+function setMode(m) {
+  mode = m;
+  document.getElementById('tab-tours').className = 'mode-tab' + (m==='tours'?' active':'');
+  document.getElementById('tab-custom').className = 'mode-tab' + (m==='custom'?' active':'');
+  renderPanel();
+}
+
+// ── PANEL ─────────────────────────────────────────────────────────────────────
+function showAddPanel() { renderPanel(); }
+
+function renderPanel() {
+  var title = document.getElementById('panel-title');
+  var sub = document.getElementById('panel-sub');
+  var body = document.getElementById('panel-body');
+
+  if (mode === 'tours') {
+    title.textContent = 'Browse Contiki tours';
+    sub.textContent = 'Click any tour to add it to your timeline';
+    body.innerHTML =
+      '<div class="panel-search">' +
+        '<input type="text" id="tour-search" placeholder="Search tours..." oninput="filterTours()" />' +
+      '</div>' +
+      '<div id="tours-list">' + TOURS.map(tourPanelCard).join('') + '</div>';
+  } else {
+    title.textContent = 'Build a custom segment';
+    sub.textContent = 'Add your own destination and activities';
+    body.innerHTML = customBuilderHTML();
+  }
+}
+
+function tourPanelCard(t) {
+  return '<div class="panel-tour" onclick="addTourSegment(\'' + t.id + '\')">' +
+    '<div class="panel-tour-img" style="background:' + t.bgColor + '">' +
+      (t.photo ? '<img src="' + t.photo + '" alt="' + t.title + '" />' : t.emoji) +
+    '</div>' +
+    '<div class="panel-tour-info">' +
+      '<div class="panel-tour-name">' + t.title + '</div>' +
+      '<div class="panel-tour-meta">' + t.days + ' days &middot; ' + t.region + '</div>' +
+      '<div class="panel-tour-price">From $' + t.price.toLocaleString() + ' pp</div>' +
+    '</div>' +
+    '<button class="add-to-trip-btn">+ Add</button>' +
+  '</div>';
+}
+
+function filterTours() {
+  var q = document.getElementById('tour-search').value.toLowerCase();
+  var filtered = TOURS.filter(t => (t.title+t.region+t.route).toLowerCase().includes(q));
+  document.getElementById('tours-list').innerHTML = filtered.map(tourPanelCard).join('') || '<p style="color:var(--muted);font-size:0.85rem;padding:12px 0">No tours found</p>';
+}
+
+function customBuilderHTML() {
+  return '<div class="custom-builder">' +
+    '<div class="custom-builder-title">&#9997;&#65039; Add a custom destination</div>' +
+    '<div class="form-row">' +
+      '<div class="form-field"><label class="form-label">Destination</label>' +
+        '<input class="form-input" id="cust-dest" placeholder="e.g. Barcelona, Spain" /></div>' +
+    '</div>' +
+    '<div class="form-row">' +
+      '<div class="form-field"><label class="form-label">From</label>' +
+        '<input class="form-input" id="cust-start" type="date" /></div>' +
+      '<div class="form-field"><label class="form-label">To</label>' +
+        '<input class="form-input" id="cust-end" type="date" /></div>' +
+    '</div>' +
+    '<div class="form-label" style="margin-bottom:6px">Activities</div>' +
+    '<div class="activity-tags">' + ACTIVITIES.map(a => '<span class="act-tag" onclick="toggleActivity(this)">' + a + '</span>').join('') + '</div>' +
+    '<button class="add-custom-btn" onclick="addCustomSegment()">Add to trip &#8594;</button>' +
+  '</div>';
+}
+
+function toggleActivity(el) { el.classList.toggle('selected'); }
+
+// ── ADD SEGMENTS ──────────────────────────────────────────────────────────────
+function addTourSegment(id) {
+  var tour = TOURS.find(t => t.id === id);
+  if (!tour) return;
+
+  var lastSeg = segments[segments.length - 1];
+  var startDate = lastSeg ? addDays(lastSeg.endDate, 1) : new Date();
+  var endDate = addDays(startDate, tour.days - 1);
+
+  // Check for gap
+  if (lastSeg && lastSeg.type !== 'gap') {
+    var gapDays = daysBetween(lastSeg.endDate, startDate);
+    if (gapDays > 1) addGapSegment(lastSeg.endDate, startDate, lastSeg.endCity || lastSeg.title, tour.title);
+  }
+
+  var seg = {
+    id: 'seg-' + Date.now(),
+    type: 'tour',
+    tourId: tour.id,
+    title: tour.title,
+    region: tour.region,
+    route: tour.route,
+    days: tour.days,
+    price: tour.price,
+    photo: tour.photo,
+    bgColor: tour.bgColor,
+    emoji: tour.emoji,
+    startDate: startDate,
+    endDate: endDate,
+    startCity: tour.route.split('→')[0].trim(),
+    endCity: tour.route.split('→').slice(-1)[0].trim(),
+  };
+  segments.push(seg);
+  renderTimeline();
+  updateSummary();
+}
+
+function addCustomSegment() {
+  var dest = document.getElementById('cust-dest').value.trim();
+  var start = document.getElementById('cust-start').value;
+  var end = document.getElementById('cust-end').value;
+  var activities = Array.from(document.querySelectorAll('.act-tag.selected')).map(el => el.textContent);
+
+  if (!dest) { document.getElementById('cust-dest').focus(); return; }
+
+  var startDate = start ? new Date(start) : new Date();
+  var endDate = end ? new Date(end) : addDays(startDate, 6);
+  var days = Math.max(1, daysBetween(startDate, endDate));
+
+  var lastSeg = segments[segments.length - 1];
+  if (lastSeg && lastSeg.type !== 'gap') {
+    var gapDays = daysBetween(lastSeg.endDate, startDate);
+    if (gapDays > 1) addGapSegment(lastSeg.endDate, startDate, lastSeg.endCity || lastSeg.title, dest);
+  }
+
+  segments.push({
+    id: 'seg-' + Date.now(),
+    type: 'custom',
+    title: dest,
+    activities: activities,
+    days: days,
+    price: 0,
+    photo: null,
+    bgColor: '#1B3A2D',
+    emoji: '📍',
+    startDate: startDate,
+    endDate: endDate,
+    startCity: dest,
+    endCity: dest,
+  });
+  renderTimeline();
+  updateSummary();
+}
+
+function addGapSegment(fromDate, toDate, fromCity, toCity) {
+  var gapDays = daysBetween(fromDate, toDate);
+  segments.push({
+    id: 'gap-' + Date.now(),
+    type: 'gap',
+    title: fromCity + ' → ' + toCity,
+    fromCity: fromCity,
+    toCity: toCity,
+    days: gapDays,
+    price: 0,
+    startDate: fromDate,
+    endDate: toDate,
+    flights: null,
+    hotels: null,
+    loadingFlights: false,
+    loadingHotels: false,
+  });
+}
+
+// ── RENDER TIMELINE ───────────────────────────────────────────────────────────
+function renderTimeline() {
+  var tl = document.getElementById('timeline');
+  var empty = document.getElementById('empty-state');
+
+  if (segments.length === 0) {
+    tl.innerHTML = '<div class="empty-timeline" id="empty-state"><div class="empty-icon">🌍</div><div class="empty-title">Your trip starts here</div><p class="empty-sub">Pick a Contiki tour from the panel, or add your own destination to get started.</p></div>';
+    return;
+  }
+
+  tl.innerHTML = segments.map(function(seg) {
+    if (seg.type === 'gap') return gapSegmentHTML(seg);
+    return tourSegmentHTML(seg);
+  }).join('') + '<div style="height:80px"></div>';
+}
+
+function tourSegmentHTML(seg) {
+  var imgHTML = seg.photo
+    ? '<img src="' + seg.photo + '" alt="' + seg.title + '" style="width:100%;height:100%;object-fit:cover" />'
+    : '<span style="font-size:1.4rem">' + seg.emoji + '</span>';
+
+  return '<div class="segment" id="' + seg.id + '">' +
+    '<div class="segment-dot' + (seg.type==='custom'?' custom':'') + '"></div>' +
+    '<div class="segment-card">' +
+      '<div class="segment-header">' +
+        '<div class="segment-img" style="background:' + seg.bgColor + '">' + imgHTML + '</div>' +
+        '<div class="segment-info">' +
+          '<div class="segment-label">' + (seg.type==='tour'?'Contiki Tour':'Custom Stop') + '</div>' +
+          '<div class="segment-name">' + seg.title + '</div>' +
+          '<div class="segment-dates">' + formatDate(seg.startDate) + ' &ndash; ' + formatDate(seg.endDate) + ' &middot; ' + seg.days + ' days' +
+            (seg.price > 0 ? ' &middot; From $' + seg.price.toLocaleString() : '') + '</div>' +
+        '</div>' +
+        '<div class="segment-actions">' +
+          '<button class="seg-btn danger" onclick="removeSegment(\'' + seg.id + '\')" title="Remove">&#10005;</button>' +
+        '</div>' +
+      '</div>' +
+      (seg.activities && seg.activities.length ? '<div style="padding:0 16px 12px;display:flex;gap:6px;flex-wrap:wrap">' + seg.activities.map(a=>'<span style="background:var(--cream-dark);border-radius:100px;padding:3px 10px;font-size:0.72rem;color:var(--dark-green);font-weight:600">'+a+'</span>').join('') + '</div>' : '') +
+    '</div>' +
+  '</div>';
+}
+
+function gapSegmentHTML(seg) {
+  var gapDays = seg.days;
+  var flightsHTML = '';
+  var hotelsHTML = '';
+
+  if (seg.loadingFlights) {
+    flightsHTML = '<div class="loading-row"><div class="spin"></div> Searching flights...</div>';
+  } else if (seg.flights) {
+    flightsHTML = '<div class="fh-section-title">✈️ Suggested flights</div>' +
+      seg.flights.map(function(f) {
+        return '<div class="flight-card">' +
+          '<div class="flight-airline">' + f.airline + '</div>' +
+          '<div class="flight-route">' + f.departure.split('T')[0] + '</div>' +
+          '<div class="flight-footer">' +
+            '<span class="flight-price">$' + f.price + '</span>' +
+            '<span class="flight-stops">' + (f.stops===0?'Direct':f.stops+' stop') + '</span>' +
+            '<a href="' + f.booking_url + '" target="_blank"><button class="book-btn">Book</button></a>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+  }
+
+  if (seg.loadingHotels) {
+    hotelsHTML = '<div class="loading-row"><div class="spin"></div> Finding hotels...</div>';
+  } else if (seg.hotels) {
+    hotelsHTML = '<div class="fh-section-title" style="margin-top:12px">🏨 Suggested hotels</div>' +
+      seg.hotels.map(function(h) {
+        return '<div class="hotel-card">' +
+          '<div class="hotel-img">' + (h.photo ? '<img src="'+h.photo+'" />' : '<div style="width:100%;height:100%;background:#ddd;display:flex;align-items:center;justify-content:center;font-size:1.2rem">🏨</div>') + '</div>' +
+          '<div class="hotel-info">' +
+            '<div class="hotel-name">' + h.name + '</div>' +
+            '<div class="hotel-addr">' + h.address + '</div>' +
+            '<div class="hotel-rating">★ ' + (h.rating||'N/A') + (h.reviews?' ('+h.reviews.toLocaleString()+')':'') + '</div>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+  }
+
+  return '<div class="segment" id="' + seg.id + '">' +
+    '<div class="segment-dot gap"></div>' +
+    '<div class="segment-card gap-card">' +
+      '<div class="segment-header">' +
+        '<div style="flex:1">' +
+          '<div class="gap-label">&#9992;&#65039; ' + gapDays + '-day gap &middot; ' + seg.title + '</div>' +
+          '<div style="font-size:0.72rem;color:var(--muted);margin-top:2px">' + formatDate(seg.startDate) + ' &ndash; ' + formatDate(seg.endDate) + '</div>' +
+        '</div>' +
+        '<div class="segment-actions">' +
+          '<button class="seg-btn danger" onclick="removeSegment(\'' + seg.id + '\')" title="Remove">&#10005;</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="gap-actions">' +
+        '<button class="gap-action-btn' + (seg.flights?' active':'') + '" onclick="loadFlights(\'' + seg.id + '\')">' +
+          '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.8 19.79 19.79 0 01.99 2.2 2 2 0 012.98.02h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L7.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>' +
+          ' Find flights' +
+        '</button>' +
+        '<button class="gap-action-btn' + (seg.hotels?' active':'') + '" onclick="loadHotels(\'' + seg.id + '\')">' +
+          '&#127968; Find hotels' +
+        '</button>' +
+      '</div>' +
+      (flightsHTML || hotelsHTML ? '<div class="fh-panel">' + flightsHTML + hotelsHTML + '</div>' : '') +
+    '</div>' +
+  '</div>';
+}
+
+// ── FLIGHTS & HOTELS ──────────────────────────────────────────────────────────
+async function loadFlights(segId) {
+  var seg = segments.find(s => s.id === segId);
+  if (!seg) return;
+  seg.loadingFlights = true;
+  renderTimeline();
+
+  // Find the next non-gap segment after this gap to get trip_b_start for feasibility check
+  var segIdx = segments.findIndex(s => s.id === segId);
+  var nextSeg = segments.slice(segIdx + 1).find(s => s.type !== 'gap');
+
+  try {
+    var res = await fetch('/api/flights', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        origin: cityToIATA(seg.fromCity),
+        destination: cityToIATA(seg.toCity),
+        departure_date: formatDateISO(seg.startDate),
+        // Pass trip B start time so Duffel can filter only feasible flights
+        trip_b_start_iso: nextSeg ? new Date(nextSeg.startDate).toISOString() : null,
+        min_buffer_hours: 4,
+        city_transfer_minutes: 120,
+      }),
+    });
+    var data = await res.json();
+    seg.flights = data.offers || [];
+    seg.direct_possible = data.direct_possible;
+  } catch(e) {
+    seg.flights = [];
+  }
+  seg.loadingFlights = false;
+  renderTimeline();
+  updateSummary();
+}
+
+async function loadHotels(segId) {
+  var seg = segments.find(s => s.id === segId);
+  if (!seg) return;
+  seg.loadingHotels = true;
+  renderTimeline();
+
+  try {
+    var res = await fetch('/api/hotels', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        // Hotels are at the destination city (toCity) — where they arrive
+        location: seg.toCity,
+        check_in: formatDateISO(seg.startDate),
+        check_out: formatDateISO(seg.endDate),
+      }),
+    });
+    var data = await res.json();
+    seg.hotels = data.hotels || [];
+  } catch(e) {
+    seg.hotels = [];
+  }
+  seg.loadingHotels = false;
+  renderTimeline();
+  updateSummary();
+}
+
+// ── REMOVE SEGMENT ────────────────────────────────────────────────────────────
+function removeSegment(id) {
+  segments = segments.filter(s => s.id !== id);
+  // Remove orphaned gaps
+  segments = segments.filter((s,i) => {
+    if (s.type !== 'gap') return true;
+    var prev = segments[i-1];
+    var next = segments[i+1];
+    return prev && next;
+  });
+  renderTimeline();
+  updateSummary();
+}
+
+// ── SUMMARY ───────────────────────────────────────────────────────────────────
+function updateSummary() {
+  var nonGap = segments.filter(s => s.type !== 'gap');
+  var totalDays = segments.reduce((n, s) => n + (s.days||0), 0);
+  var totalCost = segments.reduce((n, s) => n + (s.price||0), 0);
+  var flightCost = segments.reduce((n, s) => s.flights ? n + Math.min(...s.flights.map(f=>f.price||0)) : n, 0);
+
+  document.getElementById('sum-segments').textContent = nonGap.length;
+  document.getElementById('sum-days').textContent = totalDays;
+  document.getElementById('sum-cost').textContent = '$' + (totalCost + flightCost).toLocaleString();
+
+  var bar = document.getElementById('trip-summary');
+  bar.style.display = segments.length > 0 ? 'flex' : 'none';
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function addDays(date, n) { var d = new Date(date); d.setDate(d.getDate()+n); return d; }
+function daysBetween(a, b) { return Math.round((new Date(b)-new Date(a))/(1000*60*60*24)); }
+function formatDate(d) { return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}); }
+function formatDateISO(d) { return new Date(d).toISOString().split('T')[0]; }
+function cityToIATA(city) {
+  var map = { 'London':'LHR','Paris':'CDG','Rome':'FCO','Athens':'ATH','Mykonos':'JMK','Santorini':'JTR','Tokyo':'NRT','Osaka':'KIX','Kyoto':'KIX','Bangkok':'BKK','Nairobi':'NBO','Sydney':'SYD','Auckland':'AKL','Queenstown':'ZQN','Las Vegas':'LAS','Lima':'LIM','Cusco':'CUZ','Casablanca':'CMN','Marrakech':'RAK','Copenhagen':'CPH','Oslo':'OSL','Stockholm':'ARN','San Jose':'SJO' };
+  var key = Object.keys(map).find(k => city.toLowerCase().includes(k.toLowerCase()));
+  return key ? map[key] : city.toUpperCase().slice(0,3);
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+renderPanel();
+updateSummary();
+</script>
+</body>
+</html>
