@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Trip Search · Contiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --contiki-red: #E8192C;
+      --contiki-black: #111111;
+      --contiki-white: #FFFFFF;
+      --ai-glow: #FF6B35;
+      --surface: #F7F7F5;
+      --card-bg: #FFFFFF;
+      --muted: #6B6B6B;
+      --border: #E5E5E5;
+      --tag-bg: #F0F0EE;
+    }
+
+    html { font-size: 16px; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--surface);
+      color: var(--contiki-black);
+      min-height: 100vh;
+    }
+
+    /* NAV */
+    nav {
+      background: var(--contiki-white);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .nav-logo {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 1.4rem;
+      color: var(--contiki-red);
+      letter-spacing: -0.02em;
+      text-decoration: none;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 28px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--contiki-black);
+      text-decoration: none;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      opacity: 0.7;
+    }
+
+    .nav-links a:hover { opacity: 1; }
+
+    .nav-cta {
+      background: var(--contiki-red);
+      color: white !important;
+      padding: 8px 16px;
+      border-radius: 4px;
+      opacity: 1 !important;
+    }
+
+    /* HERO */
+    .hero {
+      background: var(--contiki-black);
+      padding: 56px 24px 48px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 80% 60% at 50% 100%, rgba(232,25,44,0.18) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 100px;
+      padding: 6px 14px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: rgba(255,255,255,0.65);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+
+    .ai-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--ai-glow);
+      box-shadow: 0 0 8px var(--ai-glow);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 8px var(--ai-glow); }
+      50% { opacity: 0.5; box-shadow: 0 0 16px var(--ai-glow); }
+    }
+
+    .hero h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 800;
+      color: var(--contiki-white);
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      margin-bottom: 12px;
+    }
+
+    .hero h1 span {
+      color: var(--contiki-red);
+    }
+
+    .hero-sub {
+      color: rgba(255,255,255,0.5);
+      font-size: 0.95rem;
+      max-width: 420px;
+      margin: 0 auto 32px;
+      line-height: 1.55;
+    }
+
+    /* SEARCH BAR */
+    .search-wrap {
+      max-width: 680px;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    .search-input-row {
+      display: flex;
+      align-items: center;
+      background: var(--contiki-white);
+      border-radius: 12px;
+      border: 2px solid transparent;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.1), 0 8px 32px rgba(0,0,0,0.3);
+      overflow: hidden;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .search-input-row:focus-within {
+      border-color: var(--contiki-red);
+      box-shadow: 0 0 0 4px rgba(232,25,44,0.15), 0 8px 32px rgba(0,0,0,0.3);
+    }
+
+    .search-icon {
+      padding: 0 16px;
+      color: var(--muted);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+    }
+
+    #search-input {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-family: 'Inter', sans-serif;
+      font-size: 1rem;
+      color: var(--contiki-black);
+      padding: 18px 0;
+      background: transparent;
+    }
+
+    #search-input::placeholder { color: #AAAAAA; }
+
+    #search-btn {
+      background: var(--contiki-red);
+      color: white;
+      border: none;
+      cursor: pointer;
+      padding: 14px 24px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.2s;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    #search-btn:hover { background: #c4101f; }
+    #search-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .search-suggestions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 14px;
+    }
+
+    .suggestion-chip {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: rgba(255,255,255,0.65);
+      border-radius: 100px;
+      padding: 6px 14px;
+      font-size: 0.78rem;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .suggestion-chip:hover {
+      background: rgba(255,255,255,0.15);
+      color: white;
+    }
+
+    /* MAIN */
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+
+    /* STATUS BAR */
+    #status-bar {
+      display: none;
+      margin-bottom: 28px;
+    }
+
+    .status-thinking {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 20px;
+      background: white;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .thinking-dots {
+      display: flex;
+      gap: 4px;
+    }
+
+    .thinking-dots span {
+      width: 6px;
+      height: 6px;
+      background: var(--contiki-red);
+      border-radius: 50%;
+      animation: blink 1.2s ease-in-out infinite;
+    }
+
+    .thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes blink {
+      0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
+      40% { opacity: 1; transform: scale(1); }
+    }
+
+    /* AI SUMMARY */
+    #ai-summary {
+      display: none;
+      background: white;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      padding: 20px 24px;
+      margin-bottom: 28px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #ai-summary::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: linear-gradient(to bottom, var(--contiki-red), var(--ai-glow));
+    }
+
+    .ai-summary-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--contiki-red);
+      margin-bottom: 8px;
+    }
+
+    #ai-summary-text {
+      font-size: 0.95rem;
+      line-height: 1.6;
+      color: #333;
+    }
+
+    /* RESULTS HEADER */
+    #results-header {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .results-count {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+
+    .results-count span { color: var(--contiki-red); }
+
+    /* GRID */
+    #results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 20px;
+    }
+
+    /* TRIP CARD */
+    .trip-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      transition: transform 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      transform: translateY(16px);
+      animation: fadeInUp 0.35s ease forwards;
+    }
+
+    .trip-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.1);
+    }
+
+    @keyframes fadeInUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card-image {
+      position: relative;
+      height: 200px;
+      overflow: hidden;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    }
+
+    .card-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .card-image-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+    }
+
+    .card-badge {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      background: var(--contiki-red);
+      color: white;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 4px;
+    }
+
+    .card-days-badge {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: rgba(0,0,0,0.65);
+      backdrop-filter: blur(4px);
+      color: white;
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 5px 10px;
+      border-radius: 6px;
+    }
+
+    .card-body {
+      padding: 18px 20px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card-region {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--contiki-red);
+      margin-bottom: 6px;
+    }
+
+    .card-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.05rem;
+      font-weight: 700;
+      line-height: 1.25;
+      margin-bottom: 8px;
+      color: var(--contiki-black);
+    }
+
+    .card-route {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    /* AI Match Reason */
+    .ai-match-reason {
+      background: #FFF8F1;
+      border: 1px solid #FFE0C8;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 0.8rem;
+      color: #7A4B1E;
+      line-height: 1.45;
+      margin-bottom: 14px;
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+    }
+
+    .ai-match-reason .ai-icon {
+      font-size: 0.9rem;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .card-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+
+    .tag {
+      background: var(--tag-bg);
+      color: #444;
+      font-size: 0.72rem;
+      font-weight: 500;
+      padding: 4px 10px;
+      border-radius: 100px;
+    }
+
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+      margin-top: auto;
+    }
+
+    .card-price {
+      font-family: 'Syne', sans-serif;
+    }
+
+    .price-from {
+      font-size: 0.7rem;
+      color: var(--muted);
+      font-weight: 400;
+      font-family: 'Inter', sans-serif;
+      display: block;
+    }
+
+    .price-amount {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: var(--contiki-black);
+    }
+
+    .card-cta {
+      background: var(--contiki-red);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 9px 18px;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+
+    .card-cta:hover { background: #c4101f; }
+
+    /* MATCH SCORE */
+    .match-score-bar {
+      height: 2px;
+      background: var(--border);
+      border-radius: 2px;
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+
+    .match-score-fill {
+      height: 100%;
+      background: linear-gradient(to right, var(--contiki-red), var(--ai-glow));
+      border-radius: 2px;
+      transition: width 0.6s ease;
+    }
+
+    /* EMPTY STATE */
+    #empty-state {
+      display: none;
+      text-align: center;
+      padding: 80px 24px;
+    }
+
+    .empty-icon { font-size: 3rem; margin-bottom: 16px; }
+
+    .empty-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .empty-text { color: var(--muted); font-size: 0.9rem; }
+
+    /* PROMO STRIP */
+    .promo-strip {
+      background: var(--contiki-red);
+      color: white;
+      text-align: center;
+      padding: 10px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+    }
+
+    /* FOOTER */
+    footer {
+      background: var(--contiki-black);
+      color: rgba(255,255,255,0.4);
+      text-align: center;
+      padding: 24px;
+      font-size: 0.75rem;
+    }
+
+    /* API KEY BANNER */
+    #api-banner {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 10px;
+      padding: 14px 18px;
+      margin-bottom: 24px;
+      font-size: 0.82rem;
+      color: #78350f;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    #api-banner strong { display: block; margin-bottom: 3px; }
+
+    #api-key-input {
+      border: 1px solid #fde68a;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 0.82rem;
+      font-family: 'Inter', sans-serif;
+      color: var(--contiki-black);
+      background: white;
+      width: 260px;
+      margin-top: 8px;
+    }
+
+    #api-key-input:focus { outline: 2px solid var(--contiki-red); border-color: transparent; }
+
+    /* STAGGER ANIMATION DELAYS */
+    .trip-card:nth-child(1) { animation-delay: 0.05s; }
+    .trip-card:nth-child(2) { animation-delay: 0.1s; }
+    .trip-card:nth-child(3) { animation-delay: 0.15s; }
+    .trip-card:nth-child(4) { animation-delay: 0.2s; }
+    .trip-card:nth-child(5) { animation-delay: 0.25s; }
+    .trip-card:nth-child(6) { animation-delay: 0.3s; }
+
+    @media (max-width: 600px) {
+      nav { padding: 0 16px; }
+      .nav-links { display: none; }
+      .hero { padding: 40px 16px 36px; }
+      main { padding: 24px 16px 60px; }
+      #results-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="promo-strip">✈️ Flash Sale — Save up to 20% on selected departures · Ends midnight Sunday</div>
+
+<nav>
+  <a class="nav-logo" href="#">CONTIKI</a>
+  <ul class="nav-links">
+    <li><a href="#">Destinations</a></li>
+    <li><a href="#">Deals</a></li>
+    <li><a href="#">Travel Styles</a></li>
+    <li><a href="#">About</a></li>
+    <li><a href="#" class="nav-cta">My Contiki</a></li>
+  </ul>
+</nav>
+
+<section class="hero">
+  <div class="hero-eyebrow">
+    <span class="ai-dot"></span>
+    AI-Powered Search · Experimental
+  </div>
+  <h1>Find your next<br/><span>adventure</span></h1>
+  <p class="hero-sub">Describe your dream trip in plain English. Our AI will surface the trips that actually match what you're looking for.</p>
+
+  <div class="search-wrap">
+    <div class="search-input-row">
+      <div class="search-icon">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      </div>
+      <input
+        type="text"
+        id="search-input"
+        placeholder="e.g. Two weeks in Europe, first time traveller, love food and nightlife…"
+        autocomplete="off"
+      />
+      <button id="search-btn" onclick="doSearch()">
+        <svg width="15" height="15" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        Search
+      </button>
+    </div>
+    <div class="search-suggestions">
+      <span class="suggestion-chip" onclick="usePrompt(this)">Solo trip, meet new people</span>
+      <span class="suggestion-chip" onclick="usePrompt(this)">Beach &amp; islands, 10 days</span>
+      <span class="suggestion-chip" onclick="usePrompt(this)">Epic adventure, South America</span>
+      <span class="suggestion-chip" onclick="usePrompt(this)">Budget Europe, under $2k</span>
+      <span class="suggestion-chip" onclick="usePrompt(this)">Asia on a gap year</span>
+    </div>
+  </div>
+</section>
+
+<main>
+
+  <div id="api-banner">
+    <span>⚙️</span>
+    <div>
+      <strong>Developer mode — Anthropic API key required</strong>
+      This proof of concept calls Claude to semantically match trips. Enter your Anthropic API key below to try it live. Keys are never stored or transmitted anywhere except the Anthropic API.
+      <br/>
+      <input type="password" id="api-key-input" placeholder="sk-ant-..." />
+    </div>
+  </div>
+
+  <div id="status-bar">
+    <div class="status-thinking">
+      <div class="thinking-dots">
+        <span></span><span></span><span></span>
+      </div>
+      <span id="status-text">Understanding your trip preferences…</span>
+    </div>
+  </div>
+
+  <div id="ai-summary">
+    <div class="ai-summary-label">
+      <span class="ai-dot" style="background:var(--contiki-red);box-shadow:none;width:6px;height:6px;animation:none;"></span>
+      AI Read
+    </div>
+    <p id="ai-summary-text"></p>
+  </div>
+
+  <div id="results-header">
+    <div class="results-count"><span id="results-count-num">0</span> trips matched</div>
+  </div>
+
+  <div id="results-grid"></div>
+
+  <div id="empty-state">
+    <div class="empty-icon">🌍</div>
+    <div class="empty-title">No trips found for that search</div>
+    <p class="empty-text">Try describing your vibe differently — destinations, activities, duration, or travel style all work.</p>
+  </div>
+
+</main>
+
+<footer>
+  © 2026 Contiki Holidays Ltd · This is an AI Search proof of concept, not the official Contiki search · Trip data is illustrative
+</footer>
+
+<script>
+// ─── TRIP DATA ────────────────────────────────────────────────────────────────
+// Real Contiki-style trips with rich descriptive metadata for AI matching
+const TRIPS = [
+  {
+    id: "eu-best-seller",
+    title: "European Escapade",
+    region: "Europe",
+    route: "London → Paris → Amsterdam → Berlin → Prague → Vienna → Rome",
+    days: 21,
+    price: 3199,
+    currency: "USD",
+    badge: "Best Seller",
+    emoji: "🏰",
+    imageGradient: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
+    tags: ["Multi-country", "City breaks", "Nightlife", "History"],
+    description: "Hit the iconic cities of Europe. Amazing nightlife, history, food markets, and unforgettable people from every corner of the world.",
+    highlights: ["Eiffel Tower at night", "Amsterdam canal cruise", "Berlin street art", "Colosseum tour"],
+    vibe: "social party nightlife culture iconic cities landmarks backpacker first time Europe",
+    style: "Classic",
+    groupSize: "up to 50"
+  },
+  {
+    id: "greece-islands",
+    title: "Greek Island Hopper",
+    region: "Europe",
+    route: "Athens → Mykonos → Paros → Santorini",
+    days: 8,
+    price: 1899,
+    currency: "USD",
+    badge: "Summer Hit",
+    emoji: "🏝️",
+    imageGradient: "linear-gradient(135deg, #0077b6 0%, #00b4d8 50%, #90e0ef 100%)",
+    tags: ["Island hopping", "Beaches", "Summer", "Short trip"],
+    description: "Sail between Greece's most stunning islands. Blue water, whitewashed villages, rooftop bars and sunsets you'll never forget.",
+    highlights: ["Sunset in Oia", "Mykonos beach clubs", "Ferry between islands", "Greek food"],
+    vibe: "beach island summer sun swim party sailing short Mediterranean relaxing",
+    style: "Island Hopping",
+    groupSize: "up to 30"
+  },
+  {
+    id: "south-america-explorer",
+    title: "South American Odyssey",
+    region: "South America",
+    route: "Lima → Cusco → Machu Picchu → Lake Titicaca → La Paz → Uyuni",
+    days: 18,
+    price: 2749,
+    currency: "USD",
+    badge: null,
+    emoji: "🦙",
+    imageGradient: "linear-gradient(135deg, #2d6a4f 0%, #40916c 50%, #74c69d 100%)",
+    tags: ["Adventure", "Culture", "Off-beaten-path", "Hiking"],
+    description: "Explore ancient ruins, trek to Machu Picchu, cross salt flats at dawn. This is bucket-list travel for the bold.",
+    highlights: ["Machu Picchu sunrise", "Salt flats of Uyuni", "Lake Titicaca", "Inca Trail"],
+    vibe: "adventure hiking mountains ruins ancient culture South America Peru Bolivia bucket list epic",
+    style: "Adventure",
+    groupSize: "up to 16"
+  },
+  {
+    id: "southeast-asia",
+    title: "Southeast Asia Encounter",
+    region: "Asia",
+    route: "Bangkok → Chiang Mai → Luang Prabang → Hanoi → Ha Long Bay → Hoi An",
+    days: 17,
+    price: 2199,
+    currency: "USD",
+    badge: "Most Popular",
+    emoji: "🏯",
+    imageGradient: "linear-gradient(135deg, #f72585 0%, #7209b7 50%, #3a0ca3 100%)",
+    tags: ["Culture", "Food", "Temples", "Budget-friendly"],
+    description: "From Bangkok's temples and street food to Vietnamese coast. An immersive dive into some of the world's most vibrant cultures.",
+    highlights: ["Ha Long Bay cruise", "Chiang Mai temples", "Hoi An lantern festival", "Thai cooking class"],
+    vibe: "Asia Southeast Asia budget gap year temples street food beaches culture backpacker",
+    style: "Classic",
+    groupSize: "up to 50"
+  },
+  {
+    id: "safari-kenya",
+    title: "African Safari Experience",
+    region: "Africa",
+    route: "Nairobi → Amboseli → Masai Mara → Serengeti → Ngorongoro",
+    days: 12,
+    price: 3899,
+    currency: "USD",
+    badge: "Bucket List",
+    emoji: "🦁",
+    imageGradient: "linear-gradient(135deg, #d4a017 0%, #c77d0c 50%, #7d4e0a 100%)",
+    tags: ["Safari", "Wildlife", "Adventure", "Small group"],
+    description: "Track the Big Five across East Africa's greatest national parks. Early mornings, campfire evenings, and wildlife you'll dream about forever.",
+    highlights: ["Masai Mara wildebeest migration", "Ngorongoro Crater", "Maasai village visit", "Amboseli elephants"],
+    vibe: "safari wildlife Africa animals adventure nature bucket list Kenya Tanzania small group",
+    style: "Small Group",
+    groupSize: "up to 16"
+  },
+  {
+    id: "japan-highlights",
+    title: "Japan Uncovered",
+    region: "Asia",
+    route: "Tokyo → Nikko → Kyoto → Nara → Osaka",
+    days: 11,
+    price: 2899,
+    currency: "USD",
+    badge: "New",
+    emoji: "⛩️",
+    imageGradient: "linear-gradient(135deg, #c9184a 0%, #ff4d6d 40%, #ff758f 100%)",
+    tags: ["Culture", "Food", "Urban", "Unique"],
+    description: "Ancient shrines meet neon megacities. Ramen, bullet trains, cherry blossoms, and an eye-opening collision of old and new.",
+    highlights: ["Fushimi Inari shrine", "Shibuya crossing", "Tea ceremony", "Osaka street food"],
+    vibe: "Japan culture food city urban Tokyo Kyoto temples ancient modern unique unique unique",
+    style: "Classic",
+    groupSize: "up to 30"
+  },
+  {
+    id: "western-europe-budget",
+    title: "European Discovery",
+    region: "Europe",
+    route: "London → Brussels → Amsterdam → Paris",
+    days: 7,
+    price: 999,
+    currency: "USD",
+    badge: "Under $1k",
+    emoji: "🚂",
+    imageGradient: "linear-gradient(135deg, #023e8a 0%, #0077b6 50%, #0096c7 100%)",
+    tags: ["Budget", "Short trip", "City breaks", "Rail"],
+    description: "Four iconic cities in one week — on a budget that actually works. Perfect for first-timers looking to dip their toes into European travel.",
+    highlights: ["Louvre Museum", "Anne Frank House", "Atomium Brussels", "Big Ben"],
+    vibe: "budget cheap affordable Europe short trip first time one week cities quick",
+    style: "Budget",
+    groupSize: "up to 50"
+  },
+  {
+    id: "costa-rica-adventure",
+    title: "Costa Rica Uncovered",
+    region: "Latin America",
+    route: "San José → Arenal → Monteverde → Manuel Antonio → Tortuguero",
+    days: 10,
+    price: 1899,
+    currency: "USD",
+    badge: null,
+    emoji: "🌿",
+    imageGradient: "linear-gradient(135deg, #1b4332 0%, #2d6a4f 50%, #52b788 100%)",
+    tags: ["Adventure", "Nature", "Wildlife", "Active"],
+    description: "Zip-line through cloud forests, spot monkeys and sloths, and kayak in jungle rivers. Pure adrenaline wrapped in natural beauty.",
+    highlights: ["Arenal Volcano hike", "Zip-lining Monteverde", "Manuel Antonio beach", "Turtle nesting"],
+    vibe: "nature adventure jungle wildlife active outdoors Latin America zip line hiking eco",
+    style: "Adventure",
+    groupSize: "up to 16"
+  },
+  {
+    id: "scandinavia",
+    title: "Scandinavian Explorer",
+    region: "Europe",
+    route: "Copenhagen → Oslo → Bergen → Flåm → Stockholm",
+    days: 10,
+    price: 2499,
+    currency: "USD",
+    badge: null,
+    emoji: "🏔️",
+    imageGradient: "linear-gradient(135deg, #023e8a 0%, #48cae4 50%, #ade8f4 100%)",
+    tags: ["Scenic", "Fjords", "Unique", "Mild pace"],
+    description: "Fjords, Viking history, Northern Lights chances, and some of the world's most liveable cities. Scandinavian cool at its best.",
+    highlights: ["Fjord cruise from Bergen", "Nobel Peace Center", "ABBA Museum Stockholm", "Northern lights (winter)"],
+    vibe: "Scandinavia fjords Norway Sweden Denmark scenic nature chill relaxed unique different",
+    style: "Classic",
+    groupSize: "up to 30"
+  },
+  {
+    id: "morocco",
+    title: "Morocco Desert Adventure",
+    region: "Africa",
+    route: "Casablanca → Fes → Sahara Desert → Marrakech",
+    days: 9,
+    price: 1549,
+    currency: "USD",
+    badge: null,
+    emoji: "🐪",
+    imageGradient: "linear-gradient(135deg, #7c3d10 0%, #c77d0c 50%, #e9c46a 100%)",
+    tags: ["Desert", "Culture", "Unique", "Short trip"],
+    description: "Lose yourself in ancient medinas, ride a camel into the Sahara, and sleep under a million stars in a Berber camp.",
+    highlights: ["Sahara camel ride", "Fes medina", "Marrakech souks", "Berber desert camp"],
+    vibe: "desert Africa Morocco unique different culture food souks camel Sahara adventure",
+    style: "Classic",
+    groupSize: "up to 30"
+  },
+  {
+    id: "australia-new-zealand",
+    title: "Australia & New Zealand Combo",
+    region: "Australia & NZ",
+    route: "Sydney → Melbourne → Queenstown → Milford Sound → Auckland",
+    days: 22,
+    price: 4299,
+    currency: "USD",
+    badge: "Epic",
+    emoji: "🥝",
+    imageGradient: "linear-gradient(135deg, #264653 0%, #2a9d8f 50%, #e9c46a 100%)",
+    tags: ["Adventure", "Scenic", "Long trip", "Bucket list"],
+    description: "The ultimate antipodean double act. Bungee jump in Queenstown, snorkel the Great Barrier Reef, and road trip through fjordland.",
+    highlights: ["Bungee jumping Queenstown", "Great Barrier Reef", "Milford Sound", "Sydney Opera House"],
+    vibe: "Australia New Zealand bungee adventure long trip epic bucket list Queenstown Sydney",
+    style: "Adventure",
+    groupSize: "up to 50"
+  },
+  {
+    id: "usa-national-parks",
+    title: "USA National Parks Road Trip",
+    region: "North America",
+    route: "Las Vegas → Grand Canyon → Bryce Canyon → Zion → Salt Lake City",
+    days: 8,
+    price: 1299,
+    currency: "USD",
+    badge: null,
+    emoji: "🏜️",
+    imageGradient: "linear-gradient(135deg, #e76f51 0%, #f4a261 50%, #e9c46a 100%)",
+    tags: ["Road trip", "Nature", "Hiking", "USA"],
+    description: "Road-trip through America's most jaw-dropping natural wonders. Canyon rims, slot canyons, red rock arches — nature at maximum volume.",
+    highlights: ["Grand Canyon South Rim", "Antelope Canyon", "Zion Angel's Landing", "Horseshoe Bend"],
+    vibe: "USA America road trip national parks nature hiking outdoors canyon desert landscapes",
+    style: "Adventure",
+    groupSize: "up to 16"
+  }
+];
+
+// ─── STATE ─────────────────────────────────────────────────────────────────────
+let currentResults = [];
+
+// ─── UI HELPERS ────────────────────────────────────────────────────────────────
+function setStatus(visible, text) {
+  const bar = document.getElementById('status-bar');
+  bar.style.display = visible ? 'block' : 'none';
+  if (text) document.getElementById('status-text').textContent = text;
+}
+
+function showAISummary(text) {
+  const el = document.getElementById('ai-summary');
+  el.style.display = 'block';
+  document.getElementById('ai-summary-text').textContent = text;
+}
+
+function hideAISummary() {
+  document.getElementById('ai-summary').style.display = 'none';
+}
+
+function showResultsHeader(count) {
+  const h = document.getElementById('results-header');
+  h.style.display = 'flex';
+  document.getElementById('results-count-num').textContent = count;
+}
+
+function hideResultsHeader() {
+  document.getElementById('results-header').style.display = 'none';
+}
+
+function showEmpty() {
+  document.getElementById('empty-state').style.display = 'block';
+}
+
+function hideEmpty() {
+  document.getElementById('empty-state').style.display = 'none';
+}
+
+function clearGrid() {
+  document.getElementById('results-grid').innerHTML = '';
+}
+
+// ─── SEARCH ────────────────────────────────────────────────────────────────────
+function usePrompt(el) {
+  document.getElementById('search-input').value = el.textContent.replace('&amp;', '&');
+  doSearch();
+}
+
+async function doSearch() {
+  const query = document.getElementById('search-input').value.trim();
+  if (!query) return;
+
+  const apiKey = document.getElementById('api-key-input').value.trim();
+
+  const btn = document.getElementById('search-btn');
+  btn.disabled = true;
+
+  clearGrid();
+  hideEmpty();
+  hideAISummary();
+  hideResultsHeader();
+  setStatus(true, 'Understanding your trip preferences…');
+
+  try {
+    const result = await semanticSearch(query, apiKey);
+    setStatus(false);
+
+    if (result.matches.length === 0) {
+      showEmpty();
+      return;
+    }
+
+    showAISummary(result.summary);
+    showResultsHeader(result.matches.length);
+    renderCards(result.matches);
+
+  } catch (err) {
+    setStatus(false);
+    showAISummary('⚠️ ' + err.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ─── SEMANTIC SEARCH ───────────────────────────────────────────────────────────
+async function semanticSearch(query, apiKey) {
+  // Build a compact trip list for the AI prompt
+  const tripList = TRIPS.map(t =>
+    `ID: ${t.id} | Title: ${t.title} | Region: ${t.region} | Days: ${t.days} | Price: $${t.price} | ` +
+    `Route: ${t.route} | Tags: ${t.tags.join(', ')} | Vibe: ${t.vibe} | Style: ${t.style}`
+  ).join('\n');
+
+  const systemPrompt = `You are a Contiki travel expert helping 18-35 year olds find their perfect group trip.
+Given a user's free-text query and a list of available trips, you must:
+1. Return a ranked list of the best matching trip IDs (up to 6, min 1)
+2. For each matched trip, write a SHORT 1-sentence reason why it specifically matches the user's query (be specific, not generic)
+3. Write a 1-2 sentence friendly summary of what you understood from the user's query
+
+Respond ONLY with valid JSON in this exact structure, no other text:
+{
+  "summary": "string — what you understood from the user",
+  "matches": [
+    { "id": "trip-id", "reason": "one sentence why this trip fits", "score": 0.0-1.0 }
+  ]
+}`;
+
+  const userMessage = `User query: "${query}"\n\nAvailable trips:\n${tripList}`;
+
+  let data;
+
+  if (apiKey) {
+    // Live Claude API call
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userMessage }]
+      })
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err?.error?.message || `API error ${response.status}`);
+    }
+
+    data = await response.json();
+    const rawText = data.content.filter(b => b.type === 'text').map(b => b.text).join('');
+    const clean = rawText.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(clean);
+    return buildResults(parsed);
+  } else {
+    // Demo mode: local keyword matching
+    return demoSearch(query);
+  }
+}
+
+function buildResults(parsed) {
+  const matched = [];
+  for (const m of parsed.matches) {
+    const trip = TRIPS.find(t => t.id === m.id);
+    if (trip) matched.push({ ...trip, aiReason: m.reason, score: m.score });
+  }
+  return { summary: parsed.summary, matches: matched };
+}
+
+// ─── DEMO MODE (no API key) ────────────────────────────────────────────────────
+function demoSearch(query) {
+  const q = query.toLowerCase();
+  const keywords = q.split(/\s+/);
+
+  const scored = TRIPS.map(trip => {
+    const corpus = (trip.vibe + ' ' + trip.tags.join(' ') + ' ' + trip.title + ' ' + trip.region + ' ' + trip.description).toLowerCase();
+    let score = 0;
+    for (const kw of keywords) {
+      if (corpus.includes(kw)) score += 1;
+    }
+    // bonus for region/destination direct match
+    if (corpus.includes(q)) score += 3;
+    return { ...trip, score: score / keywords.length, aiReason: generateDemoReason(trip, q) };
+  }).filter(t => t.score > 0).sort((a, b) => b.score - a.score).slice(0, 6);
+
+  const summary = scored.length > 0
+    ? `I found ${scored.length} trips matching your search for "${query}". Enter an Anthropic API key above for full AI-powered matching with personalised reasoning.`
+    : `No trips matched "${query}". Try different keywords or enter an API key for smarter search.`;
+
+  return { summary, matches: scored };
+}
+
+function generateDemoReason(trip, query) {
+  const reasons = {
+    "eu-best-seller": "Classic multi-city route through Europe's most iconic destinations.",
+    "greece-islands": "Perfect for sun, sea and island-hopping in the Mediterranean.",
+    "south-america-explorer": "Adventure-packed route through South America's most legendary sites.",
+    "southeast-asia": "Immerses you in Asia's food, temples, and culture across multiple countries.",
+    "safari-kenya": "Get face-to-face with Africa's Big Five on this small-group safari.",
+    "japan-highlights": "Balances ancient temples with ultra-modern city life across Japan.",
+    "western-europe-budget": "Four iconic European cities in one week — at a budget-friendly price.",
+    "costa-rica-adventure": "Pure outdoor adventure through one of the world's most biodiverse countries.",
+    "scandinavia": "Stunning fjords and Nordic cities across three Scandinavian countries.",
+    "morocco": "A sensory-rich journey through ancient medinas and Saharan desert.",
+    "australia-new-zealand": "The ultimate antipodean bucket-list trip covering two incredible countries.",
+    "usa-national-parks": "America's greatest natural wonders on an epic canyon road trip."
+  };
+  return reasons[trip.id] || "A great match for your travel style.";
+}
+
+// ─── RENDER ────────────────────────────────────────────────────────────────────
+function renderCards(trips) {
+  const grid = document.getElementById('results-grid');
+  grid.innerHTML = '';
+
+  trips.forEach((trip, i) => {
+    const card = document.createElement('a');
+    card.className = 'trip-card';
+    card.href = `https://www.contiki.com/en-us/search`;
+    card.target = '_blank';
+    card.rel = 'noopener';
+    card.style.animationDelay = `${i * 0.07}s`;
+
+    const scoreWidth = Math.round((trip.score || 0.7) * 100);
+    const priceFormatted = trip.price.toLocaleString('en-US');
+
+    card.innerHTML = `
+      <div class="card-image" style="background:${trip.imageGradient}">
+        <div class="card-image-placeholder">${trip.emoji}</div>
+        ${trip.badge ? `<div class="card-badge">${trip.badge}</div>` : ''}
+        <div class="card-days-badge">${trip.days} days</div>
+      </div>
+      <div class="card-body">
+        <div class="match-score-bar">
+          <div class="match-score-fill" style="width:${scoreWidth}%"></div>
+        </div>
+        <div class="card-region">${trip.region}</div>
+        <div class="card-title">${trip.title}</div>
+        <div class="card-route">${trip.route}</div>
+        <div class="ai-match-reason">
+          <span class="ai-icon">✦</span>
+          <span>${trip.aiReason}</span>
+        </div>
+        <div class="card-tags">
+          ${trip.tags.map(t => `<span class="tag">${t}</span>`).join('')}
+        </div>
+        <div class="card-footer">
+          <div class="card-price">
+            <span class="price-from">From</span>
+            <span class="price-amount">$${priceFormatted}</span>
+          </div>
+          <span class="card-cta">View Trip →</span>
+        </div>
+      </div>
+    `;
+
+    grid.appendChild(card);
+  });
+}
+
+// ─── ENTER KEY ─────────────────────────────────────────────────────────────────
+document.getElementById('search-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') doSearch();
+});
+</script>
+</body>
+</html>
