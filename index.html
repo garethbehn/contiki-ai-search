@@ -42,10 +42,11 @@
     .account-pill { border:1.5px solid var(--border); border-radius:100px; padding:8px 14px; cursor:pointer; background:transparent; display:flex; align-items:center; gap:6px; color:var(--black); }
 
     /* SEARCH MODAL */
-    #search-overlay { display:none; position:fixed; inset:0; z-index:300; background:rgba(0,0,0,0.4); backdrop-filter:blur(2px); }
+    #search-overlay { display:none; position:fixed; inset:0; z-index:300; background:rgba(0,0,0,0.4); backdrop-filter:blur(2px); overflow:hidden; }
     #search-overlay.open { display:block; }
-    #search-modal { position:absolute; top:0; left:0; right:0; background:var(--white); padding:40px 60px 48px; box-shadow:0 8px 48px rgba(0,0,0,0.15); transform:translateY(-100%); transition:transform 0.3s cubic-bezier(0.4,0,0.2,1); }
+    #search-modal { position:absolute; top:0; left:0; right:0; background:var(--white); padding:40px 60px 48px; box-shadow:0 8px 48px rgba(0,0,0,0.15); transform:translateY(-100%); transition:transform 0.3s cubic-bezier(0.4,0,0.2,1); overflow-y:auto; max-height:100vh; }
     #search-overlay.open #search-modal { transform:translateY(0); }
+    body.modal-open { overflow:hidden; }
     .modal-heading { font-family:'Inter',sans-serif; font-size:1.6rem; font-weight:700; color:var(--dark-green); margin-bottom:24px; }
     .modal-close { position:absolute; top:20px; right:24px; background:none; border:none; cursor:pointer; color:var(--muted); font-size:1.4rem; width:36px; height:36px; display:flex; align-items:center; justify-content:center; border-radius:50%; }
     .modal-close:hover { background:var(--cream); }
@@ -82,12 +83,12 @@
     .results-label { font-size:0.85rem; font-weight:600; color:var(--dark-green); }
     .results-label span { color:var(--orange); }
 
-    #modal-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+    #modal-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; background:#161616; border-radius:14px; padding:16px; margin:0 -4px; }
     #modal-empty { display:none; text-align:center; padding:40px; color:var(--muted); font-size:0.9rem; }
     #modal-empty.visible { display:block; }
 
     /* TRIP CARD */
-    .trip-card { border-radius:16px; overflow:hidden; background:#1C1C1C; cursor:pointer; text-decoration:none; color:inherit; display:flex; flex-direction:column; opacity:0; transform:translateY(12px); animation:riseIn 0.3s ease forwards; transition:transform 0.2s,box-shadow 0.2s; }
+    .trip-card { border-radius:16px; overflow:hidden; background:#1E1E1E; cursor:pointer; text-decoration:none; color:inherit; display:flex; flex-direction:column; opacity:0; transform:translateY(12px); animation:riseIn 0.3s ease forwards; transition:transform 0.2s,box-shadow 0.2s; }
     .trip-card:hover { transform:translateY(-3px); box-shadow:0 12px 32px rgba(0,0,0,0.35); }
     @keyframes riseIn { to{opacity:1;transform:translateY(0)} }
     .trip-card:nth-child(1){animation-delay:0.04s} .trip-card:nth-child(2){animation-delay:0.09s}
@@ -126,13 +127,13 @@
     .card-reason { padding:9px 12px 11px; background:#1E0C00; border-top:1px solid #3a1800; font-size:0.73rem; color:#FFB380; line-height:1.45; display:flex; gap:7px; }
 
     /* POPULAR */
-    #popular-section { margin-top:0; }
+    #popular-section { margin-top:0; background:#F7F4F0; border-radius:12px; padding:16px; margin:0 -4px; }
     .popular-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
     .popular-title { font-size:1.15rem; font-weight:700; color:var(--dark-green); }
     .popular-nav { display:flex; gap:8px; }
     .pop-nav-btn { width:36px; height:36px; border-radius:50%; border:1.5px solid var(--border); background:white; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--black); }
     .pop-nav-btn.active { background:var(--orange); border-color:var(--orange); color:white; }
-    .popular-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+    .popular-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; background:#161616; border-radius:12px; padding:16px; }
     .popular-dots { display:flex; justify-content:center; gap:6px; margin-top:14px; }
     .popular-dot { width:24px; height:4px; border-radius:2px; background:var(--orange); }
     .popular-dot.inactive { background:var(--border); width:8px; }
@@ -151,8 +152,8 @@
     .section-title { font-size:1.2rem; font-weight:700; color:var(--dark-green); margin-bottom:4px; }
     .section-desc { font-size:0.8rem; color:var(--muted); margin-bottom:20px; }
     .trips-row { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
-    .static-card { border-radius:16px; overflow:hidden; background:#1C1C1C; text-decoration:none; display:block; transition:transform 0.2s,box-shadow 0.2s; }
-    .static-card:hover { transform:translateY(-3px); box-shadow:0 12px 32px rgba(0,0,0,0.35); }
+    .static-card { border-radius:16px; overflow:hidden; background:#1E1E1E; text-decoration:none; display:block; transition:transform 0.2s,box-shadow 0.2s; }
+    .static-card:hover { transform:translateY(-3px); box-shadow:0 16px 40px rgba(0,0,0,0.4); }
     .region-links { text-align:center; font-size:1.4rem; font-weight:700; line-height:2; color:var(--dark-green); }
     .region-links a { color:var(--dark-green); text-decoration:none; }
     .region-links a:hover { color:var(--orange); }
@@ -278,11 +279,11 @@
 <!-- NAV -->
 <nav>
   <div class="nav-left">
-    <a href="#" class="nav-link">Explore Trips <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></a>
-    <a href="#" class="nav-link">Build Trip <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></a>
+    <a href="/" class="nav-link">Explore Trips <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></a>
+    <a href="/build-trip.html" class="nav-link">Build Trip <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></a>
     <a href="#" class="nav-link">About <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></a>
   </div>
-  <a href="#" class="nav-logo">contiki</a>
+  <a href="/" class="nav-logo">contiki</a>
   <div class="nav-right">
     <button class="search-pill" onclick="openSearch()">
       <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
@@ -378,16 +379,16 @@
 </section>
 
 <!-- ICONIC TRIPS -->
-<section class="home-section" style="background:var(--cream);">
-  <div class="section-title">Our Most Iconic Trips</div>
-  <div class="section-desc">The trips that travellers can't get enough of.</div>
+<section class="home-section" style="background:#181818;">
+  <div class="section-title" style="color:white">Our Most Iconic Trips</div>
+  <div class="section-desc" style="color:rgba(255,255,255,0.5)">The trips that travellers can't get enough of.</div>
   <div class="trips-row" id="iconic-grid"></div>
 </section>
 
 <!-- LATEST DROPS -->
-<section class="home-section" style="background:var(--cream-dark);">
-  <div class="section-title">Latest Drops</div>
-  <div class="section-desc">Brand new trips, just added.</div>
+<section class="home-section" style="background:#111111;">
+  <div class="section-title" style="color:white">Latest Drops</div>
+  <div class="section-desc" style="color:rgba(255,255,255,0.5)">Brand new trips, just added.</div>
   <div class="trips-row" id="latest-grid"></div>
 </section>
 
@@ -454,15 +455,21 @@ const TRIPS = [
   { id:'usa-parks', title:'USA National Parks', region:'North America', route:'Las Vegas to Grand Canyon to Zion', days:8, countries:1, price:1300, photo:'https://images.unsplash.com/photo-1474044159687-1ee9f3a51722?w=600&q=80', bgColor:'#7c2d12', vibe:'USA America road trip national parks nature hiking outdoors canyon desert landscapes', tags:['New Trip'] },
 ];
 
+function imgErr(el) { el.style.display = 'none'; }
+
 function buildCardImg(t) {
-  var bgStyle = 'background-image:url(' + t.photo + ');background-color:' + t.bgColor + ';background-size:cover;background-position:center;';
   var words = t.title.split(' ');
   var line1 = words[0];
   var line2 = words.slice(1).join(' ');
+  var imgHTML = t.photo
+    ? '<img src="' + t.photo + '" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;" onerror="imgErr(this)" />'
+    : '';
   return '<div class="card-img">' +
-    '<div class="card-img-bg" style="' + bgStyle + '"></div>' +
-    '<div class="originals-badge">originals</div>' +
-    '<div class="card-title-overlay">' +
+    '<div class="card-img-bg" style="background-color:' + t.bgColor + ';position:absolute;inset:0;"></div>' +
+    imgHTML +
+    '<div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.82) 0%,rgba(0,0,0,0.12) 48%,transparent 70%);z-index:1;"></div>' +
+    '<div class="originals-badge" style="z-index:2;">originals</div>' +
+    '<div class="card-title-overlay" style="z-index:2;">' +
       '<span class="card-title-line1">' + line1.toLowerCase() + '</span>' +
       (line2 ? '<span class="card-title-line2">' + line2.toUpperCase() + '</span>' : '') +
     '</div>' +
@@ -524,9 +531,10 @@ function renderHomepageCards() {
 // MODAL
 function openSearch() {
   document.getElementById('search-overlay').classList.add('open');
+  document.body.classList.add('modal-open');
   setTimeout(function(){ document.getElementById('ai-search-input').focus(); }, 300);
 }
-function closeSearch() { document.getElementById('search-overlay').classList.remove('open'); }
+function closeSearch() { document.getElementById('search-overlay').classList.remove('open'); document.body.classList.remove('modal-open'); }
 function handleOverlayClick(e) { if (e.target === document.getElementById('search-overlay')) closeSearch(); }
 document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeSearch(); });
 document.getElementById('ai-search-input').addEventListener('keydown', function(e){ if (e.key === 'Enter') doSearch(); });
@@ -594,6 +602,7 @@ async function semanticSearch(query) {
   return { summary: parsed.summary, matches: matches };
 }
 
+function hideImg(el){el.style.display="none";}
 renderPopular();
 renderHomepageCards();
 </script>
